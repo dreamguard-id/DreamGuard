@@ -1,7 +1,7 @@
 const express = require('express');
-const { auth, db, admin } = require('../config/firebase-config');
+const { auth, db, admin } = require('../configs/firebase');
 const { check, validationResult } = require('express-validator');
-const { isAuthenticated } = require('../middlewares/auth-middleware');
+const { isAuthenticated } = require('../middlewares/auth');
 const { DateTime } = require('luxon');
 
 const router = express.Router();

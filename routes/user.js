@@ -1,9 +1,9 @@
 const express = require('express');
 const path = require('path');
-const { db } = require('../config/firebase-config');
-const { bucket } = require('../config/cloudstorage-config');
-const { isAuthenticated } = require('../middlewares/auth-middleware');
-const { uploadMiddleware } = require('../middlewares/upload-middleware');
+const { db } = require('../configs/firebase');
+const { bucket } = require('../configs/bucket');
+const { isAuthenticated } = require('../middlewares/auth');
+const { uploadMiddleware } = require('../middlewares/upload');
 const { body, validationResult } = require('express-validator');
 
 const router = express.Router();

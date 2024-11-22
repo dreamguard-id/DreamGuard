@@ -1,4 +1,4 @@
-const { auth } = require('../config/firebase-config');
+const { auth } = require('../configs/firebase');
 
 exports.isAuthenticated = async (req, res, next) => {
   try {
