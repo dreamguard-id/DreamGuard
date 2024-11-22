@@ -6,6 +6,76 @@ const { DateTime } = require('luxon');
 
 const router = express.Router();
 
+/**
+ * For testing purposes only
+ * TODO: Remove this route and file in production
+ */
+router.post(
+  '/test-registration',
+  [
+    check('fullname').notEmpty().withMessage('Fullname is required'),
+    check('email').isEmail().withMessage('Invalid email format'),
+    check('password')
+      .isLength({ min: 6 })
+      .withMessage('Password must be at least 6 characters'),
+    check('confirmPassword')
+      .custom((value, { req }) => value === req.body.password)
+      .withMessage('Passwords do not match'),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ status: 'error', errors: errors.array() });
+    }
+
+    const { fullname, email, password } = req.body;
+
+    try {
+      try {
+        await auth.getUserByEmail(email);
+        return res.status(409).json({
+          status: 'error',
+          message: 'User with this email already exists',
+        });
+      } catch (checkError) {
+        if (checkError.code !== 'auth/user-not-found') {
+          throw checkError;
+        }
+      }
+
+      const userRecord = await auth.createUser({
+        email,
+        password,
+        displayName: fullname,
+      });
+
+      if (!userRecord || !userRecord.uid) {
+        return res.status(500).json({
+          status: 'error',
+          message: 'Failed to create user account',
+        });
+      }
+
+      res.status(201).json({
+        status: 'success',
+        message: `User ${email} registered successfully.`,
+        uid: userRecord.uid,
+      });
+    } catch (error) {
+      console.error('Error registering user:', error);
+      res.status(500).json({
+        status: 'error',
+        message:
+          error.code === 'auth/email-already-exists'
+            ? 'User with this email already exists'
+            : error.message || 'An unknown error occurred during registration',
+      });
+    }
+  }
+);
+
+module.exports = router;
+
 // // Verifikasi Email
 // router.post('/verify-email', async (req, res) => {
 //   const { email } = req.body;
@@ -109,48 +179,48 @@ const router = express.Router();
 // });
 
 // // Registrasi menggunakan Google
-router.post('/register-using-google', async (req, res) => {
-  const { token } = req.body;
+// router.post('/register-using-google', async (req, res) => {
+//   const { token } = req.body;
 
-  if (!token) {
-    return res
-      .status(400)
-      .json({ status: 'error', message: 'Token is required' });
-  }
+//   if (!token) {
+//     return res
+//       .status(400)
+//       .json({ status: 'error', message: 'Token is required' });
+//   }
 
-  try {
-    const decodedToken = await auth.verifyIdToken(token);
-    const uid = decodedToken.uid;
+//   try {
+//     const decodedToken = await auth.verifyIdToken(token);
+//     const uid = decodedToken.uid;
 
-    const userRef = db.collection('users').doc(uid);
-    const userDoc = await userRef.get();
+//     const userRef = db.collection('users').doc(uid);
+//     const userDoc = await userRef.get();
 
-    if (!userDoc.exists) {
-      const userRecord = await auth.getUser(uid);
+//     if (!userDoc.exists) {
+//       const userRecord = await auth.getUser(uid);
 
-      await userRef.set({
-        uid,
-        email: userRecord.email,
-        fullname: userRecord.displayName || 'No name',
-        profilePicture: userRecord.photoURL || '',
-        age: null,
-        gender: null,
-      });
-    }
+//       await userRef.set({
+//         uid,
+//         email: userRecord.email,
+//         fullname: userRecord.displayName || 'No name',
+//         profilePicture: userRecord.photoURL || '',
+//         age: null,
+//         gender: null,
+//       });
+//     }
 
-    res.status(200).json({
-      status: 'success',
-      message: 'Login or Registration successful',
-      uid,
-    });
-  } catch (error) {
-    console.error('Error registering with Google:', error);
-    res.status(401).json({
-      status: 'error',
-      message: 'Invalid token or Firebase error',
-    });
-  }
-});
+//     res.status(200).json({
+//       status: 'success',
+//       message: 'Login or Registration successful',
+//       uid,
+//     });
+//   } catch (error) {
+//     console.error('Error registering with Google:', error);
+//     res.status(401).json({
+//       status: 'error',
+//       message: 'Invalid token or Firebase error',
+//     });
+//   }
+// });
 
 // // Reset Password
 // router.post('/reset-password', async (req, res) => {
@@ -178,46 +248,6 @@ router.post('/register-using-google', async (req, res) => {
 //   }
 // });
 
-router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-
-  // Validasi input
-  if (!email || !password) {
-    return res.status(400).json({
-      status: 'error',
-      message: 'Email and password are required',
-    });
-  }
-
-  try {
-    // Login user menggunakan Firebase Authentication (Admin SDK)
-    const user = await auth.getUserByEmail(email);
-
-    if (!user) {
-      return res.status(404).json({
-        status: 'error',
-        message: 'User not found. Please register first.',
-      });
-    }
-
-    // Buat token custom untuk pengguna (karena Firebase Admin tidak langsung login user)
-    const customToken = await auth.createCustomToken(user.uid);
-
-    res.status(200).json({
-      status: 'success',
-      message: 'Login successful',
-      token: customToken, // Token dikirimkan ke klien
-    });
-  } catch (error) {
-    console.error('Error during login:', error);
-
-    // Tangani kesalahan autentikasi
-    res.status(401).json({
-      status: 'error',
-      message: 'Invalid email or password',
-    });
-  }
-});
 // //LOGIN USER
 // router.post('/login', async (req, res) => {
 //   const { email, password } = req.body;
@@ -244,71 +274,4 @@ router.post('/login', async (req, res) => {
 //     });
 //   }
 // });
-// Registrasi User
-router.post(
-  '/test-registration',
-  [
-    check('fullname').notEmpty().withMessage('Fullname is required'),
-    check('email').isEmail().withMessage('Invalid email format'),
-    check('password')
-      .isLength({ min: 6 })
-      .withMessage('Password must be at least 6 characters'),
-    check('confirmPassword')
-      .custom((value, { req }) => value === req.body.password)
-      .withMessage('Passwords do not match'),
-  ],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ status: 'error', errors: errors.array() });
-    }
 
-    const { fullname, email, password } = req.body;
-
-    try {
-      try {
-        await auth.getUserByEmail(email);
-        return res.status(409).json({
-          status: 'error',
-          message: 'User with this email already exists',
-        });
-      } catch (checkError) {
-        if (checkError.code !== 'auth/user-not-found') {
-          throw checkError;
-        }
-      }
-
-      // Create user in Firebase Auth
-      const userRecord = await auth.createUser({
-        email,
-        password,
-        displayName: fullname,
-      });
-
-      // Verify user creation
-      if (!userRecord || !userRecord.uid) {
-        return res.status(500).json({
-          status: 'error',
-          message: 'Failed to create user account',
-        });
-      }
-
-      res.status(201).json({
-        status: 'success',
-        message: `User ${email} registered successfully.`,
-        uid: userRecord.uid,
-      });
-    } catch (error) {
-      console.error('Error registering user:', error);
-      res.status(500).json({
-        status: 'error',
-        message:
-          error.code === 'auth/email-already-exists'
-            ? 'User with this email already exists'
-            : error.message || 'An unknown error occurred during registration',
-      });
-    }
-  }
-);
-
-module.exports = router;

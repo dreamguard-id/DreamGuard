@@ -8,7 +8,10 @@ const { body, validationResult } = require('express-validator');
 
 const router = express.Router();
 
-// Registrasi User
+// USER DATA REGISTRATION
+/**
+ * * Already tested (Working)
+ */
 router.post('/registration', isAuthenticated, async (req, res) => {
   try {
     const uid = req.user.uid;
@@ -63,6 +66,12 @@ router.post('/registration', isAuthenticated, async (req, res) => {
   }
 });
 
+// USER ACCOUNT DELETION
+/**
+ * ! Not tested yet
+ * * Most likely working
+ * TODO: Test it later
+ */
 router.delete('/delete-account', isAuthenticated, async (req, res) => {
   const uid = req.user.uid;
 
@@ -86,6 +95,11 @@ router.delete('/delete-account', isAuthenticated, async (req, res) => {
 });
 
 // GET USER PROFILE DATA
+/**
+ * ! Not tested yet
+ * * Most likely working
+ * TODO: Test it later
+ */
 router.get('/profile', isAuthenticated, async (req, res) => {
   try {
     const uid = req.user.uid;
@@ -115,6 +129,11 @@ router.get('/profile', isAuthenticated, async (req, res) => {
 });
 
 // UPDATE OR ADD PROFILE DATA
+/**
+ * ! Not tested yet
+ * * File workflow might be problematic and wrong
+ * TODO: Test it later
+ */
 router.patch(
   '/profile',
   isAuthenticated,
@@ -185,7 +204,6 @@ router.patch(
         });
       }
 
-      // Perbarui hanya data yang dikirim
       const updates = {};
       if (fullname) updates.fullname = fullname;
       if (gender) updates.gender = gender;
@@ -208,6 +226,12 @@ router.patch(
   }
 );
 
+// SAVE PREDICTIONS HISTORY
+/**
+ * ! Not tested yet
+ * * Most likely working
+ * TODO: Test it later
+ */
 router.post('/predict-history', isAuthenticated, async (req, res) => {
   const {
     gender,
