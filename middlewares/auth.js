@@ -16,9 +16,9 @@ exports.isAuthenticated = async (req, res, next) => {
     // ! Mock token buat testing, jangan lupa di delete
     if (token === 'mock-token') {
       req.user = {
-        uid: '0ci9ANiGipQ8CfFcLIzKLslqey62',
-        email: 'darrenarkaan@gmail.com',
-        name: 'Arkaann',
+        uid: 'zglQYzxLWqTGHxJlenc6v4IOp6O2',
+        email: 'lemillionscribe@gmail.com',
+        name: 'Lemillion',
       };
       return next();
     }
