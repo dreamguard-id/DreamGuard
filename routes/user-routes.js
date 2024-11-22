@@ -11,7 +11,9 @@ const router = express.Router();
 // GET USER PROFILE DATA
 router.get('/profile', isAuthenticated, async (req, res) => {
   try {
-    const userRef = db.collection('users').doc(req.user.uid);
+    const uid = req.user.uid;
+
+    const userRef = db.collection('users').doc(uid);
     const userData = await userRef.get();
 
     if (!userData.exists) {
