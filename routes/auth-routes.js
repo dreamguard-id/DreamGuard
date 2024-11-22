@@ -1,7 +1,7 @@
 const express = require('express');
 const { auth, db, admin } = require('../config/firebase-config');
 const { check, validationResult } = require('express-validator');
-const isAuthenticated = require('../middlewares/auth-middleware');
+const { isAuthenticated } = require('../middlewares/auth-middleware');
 const { DateTime } = require('luxon');
 
 const router = express.Router();
@@ -351,7 +351,7 @@ router.post(
       res.status(201).json({
         status: 'success',
         message: `User ${email} registered successfully.`,
-        userId: userRecord.uid,
+        uid: userRecord.uid,
       });
     } catch (error) {
       console.error('Error registering user:', error);
