@@ -1,19 +1,20 @@
 const express = require('express');
 const { auth, db, admin } = require('../config/firebase-config');
 const { check, validationResult } = require('express-validator');
+const isAuthenticated = require('../middlewares/auth-middleware');
 const { DateTime } = require('luxon');
 
 const router = express.Router();
 
 // Registrasi User
-router.post('/registration', async (req, res) => {
-  const { fullname, email } = req.body;
-
+router.post('/registration', isAuthenticated, async (req, res) => {
   try {
-    const userRecord = await auth.getUserByEmail(email);
+    const uid = req.user.uid;
+    const email = req.user.email;
+    const fullname = req.user.name;
 
     const userData = {
-      uid: userRecord.uid,
+      uid,
       email,
       fullname,
       age: null,
@@ -22,7 +23,7 @@ router.post('/registration', async (req, res) => {
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
-    await db.collection('users').doc(userRecord.uid).set(userData);
+    await db.collection('users').doc(uid).set(userData);
 
     const responseData = {
       ...userData,
@@ -52,7 +53,6 @@ router.post('/registration', async (req, res) => {
       });
     }
 
-    // Penanganan error umum
     res.status(500).json({
       status: 'error',
       message:
