@@ -62,27 +62,23 @@ router.post('/registration', isAuthenticated, async (req, res) => {
 });
 
 router.delete('/delete-account', isAuthenticated, async (req, res) => {
+  const uid = req.user.uid;
+
   try {
-    const uid = req.user.uid;
+    await db.collection('users').doc(uid).delete();
 
     await auth.deleteUser(uid);
 
-    // Hapus data pengguna dari Firestore
-    await db.collection('users').doc(uid).delete();
-
     res.status(200).json({
       status: 'success',
-      message:
-        'User account successfully deleted from both Authentication and Firestore.',
+      message: 'Account and related data have been successfully deleted.',
     });
   } catch (error) {
     console.error('Error deleting user account:', error);
 
     res.status(500).json({
       status: 'error',
-      message:
-        error.message ||
-        'An unknown error occurred while deleting the account.',
+      message: error.message || 'An error occurred while deleting the account.',
     });
   }
 });
