@@ -251,7 +251,7 @@ router.patch(
  * * Most likely working
  * TODO: Test it later
  */
-router.post('/predictions-history', isAuthenticated, async (req, res) => {
+router.post('/predictions', isAuthenticated, async (req, res) => {
   const {
     gender,
     age,
@@ -325,7 +325,7 @@ router.post('/predictions-history', isAuthenticated, async (req, res) => {
 });
 
 // GET PREDICTIONS HISTORY
-router.get('/predictions-history', isAuthenticated, async (req, res) => {
+router.get('/predictions', isAuthenticated, async (req, res) => {
   try {
     const uid = req.user.uid;
     const userDocRef = db.collection('users').doc(uid);
