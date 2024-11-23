@@ -277,7 +277,7 @@ router.post('/predictions', isAuthenticated, async (req, res) => {
       age: age || userDoc.data().age,
     });
 
-    const predictionsRef = userDocRef.collection('predictions-history');
+    const predictionsRef = userDocRef.collection('predictions');
     const snapshot = await predictionsRef.get();
     const predictionNumber = snapshot.size + 1;
     const predictionData = {
@@ -334,7 +334,7 @@ router.get('/predictions', isAuthenticated, async (req, res) => {
     }
 
     const predictionsSnapshot = await userDocRef
-      .collection('predictions-history')
+      .collection('predictions')
       .orderBy('predictionNumber', 'asc')
       .get();
     if (predictionsSnapshot.empty) {
