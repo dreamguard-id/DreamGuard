@@ -68,9 +68,7 @@ router.post('/registration', isAuthenticated, async (req, res) => {
 
 // GET USER PROFILE DATA
 /**
- * ! Not tested yet
- * * Most likely working
- * TODO: Test it later
+ * * Already tested (Working)
  */
 router.get('/profile', isAuthenticated, async (req, res) => {
   try {
@@ -101,9 +99,7 @@ router.get('/profile', isAuthenticated, async (req, res) => {
 
 // UPDATE OR ADD PROFILE DATA
 /**
- * ! Not tested yet
- * * Most likely working
- * TODO: Test it later
+ * * Already tested (Working)
  */
 router.patch(
   '/profile/data',
@@ -162,9 +158,7 @@ router.patch(
 
 // UPDATE OR ADD PROFILE PICTURE
 /**
- * ! Not tested yet
- * * File workflow might be problematic and wrong
- * TODO: Test it later
+ * * Already tested (Working)
  */
 router.patch(
   '/profile/picture',
@@ -247,9 +241,7 @@ router.patch(
 
 // SAVE PREDICTIONS TO HISTORY
 /**
- * ! Not tested yet
- * * Most likely working
- * TODO: Test it later
+ * * Already tested (Working)
  */
 router.post('/predictions', isAuthenticated, async (req, res) => {
   const {
@@ -325,6 +317,9 @@ router.post('/predictions', isAuthenticated, async (req, res) => {
 });
 
 // GET PREDICTIONS HISTORY
+/**
+ * * Already tested (Working)
+ */
 router.get('/predictions', isAuthenticated, async (req, res) => {
   try {
     const uid = req.user.uid;
@@ -367,9 +362,7 @@ router.get('/predictions', isAuthenticated, async (req, res) => {
 
 // USER ACCOUNT DELETION
 /**
- * ! Not tested yet
- * * Most likely working
- * TODO: Test it later
+ * * Already tested (Working)
  */
 router.delete('/delete-account', isAuthenticated, async (req, res) => {
   const uid = req.user.uid;
