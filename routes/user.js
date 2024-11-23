@@ -182,22 +182,33 @@ router.patch(
 
     try {
       const oldData = await userRef.get();
+      let responseMessage = '';
+
       if (oldData.exists && oldData.data().profilePicture) {
         const oldFileName = oldData
           .data()
           .profilePicture.split('/profile_pictures/')
           .pop();
+
         await bucket
           .file(`profile_pictures/${oldFileName}`)
           .delete()
           .catch(() => {
             console.warn('Failed to delete old profile picture.');
           });
+
+        responseMessage =
+          'Profile picture successfully updated and old picture successfully deleted from storage.';
+      } else {
+        responseMessage = 'Profile picture successfully added.';
       }
 
       const fileName = `${DateTime.now()
         .setZone('Asia/Jakarta')
-        .toFormat('yyyyMMdd_HHmmss')}_${path.basename(req.file.originalname)}`;
+        .toFormat('yyyyMMdd_HHmmss')}_${path.basename(uid)}${path.extname(
+        req.file.originalname
+      )}`;
+
       const file = bucket.file(`profile_pictures/${fileName}`);
 
       await new Promise((resolve, reject) => {
@@ -208,8 +219,6 @@ router.patch(
 
         blobStream.on('finish', async () => {
           try {
-            await file.makePublic();
-
             const publicUrl = `https://storage.googleapis.com/${bucket.name}/profile_pictures/${fileName}`;
             await userRef.update({ profilePicture: publicUrl });
             resolve(publicUrl);
@@ -224,7 +233,7 @@ router.patch(
 
       res.status(200).json({
         status: 'success',
-        message: 'Profile picture updated successfully',
+        message: responseMessage,
       });
     } catch (error) {
       res.status(500).json({
@@ -241,7 +250,7 @@ router.patch(
  * * Most likely working
  * TODO: Test it later
  */
-router.post('/predict-history', isAuthenticated, async (req, res) => {
+router.post('/predictions-history', isAuthenticated, async (req, res) => {
   const {
     gender,
     age,
@@ -275,6 +284,9 @@ router.post('/predict-history', isAuthenticated, async (req, res) => {
       age: age || userDoc.data().age,
     });
 
+    const predictionsRef = userDocRef.collection('predictions-history');
+    const snapshot = await predictionsRef.get();
+    const predictionNumber = snapshot.size + 1;
     const predictionData = {
       gender,
       age,
@@ -289,21 +301,66 @@ router.post('/predict-history', isAuthenticated, async (req, res) => {
       systolic,
       diastolic,
       predictionResult,
+      predictionNumber,
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
-    await userDocRef.collection('history').add(predictionData);
+    // Menyimpan prediksi
+    await predictionsRef.add(predictionData);
 
     res.status(201).json({
       status: 'success',
-      message: 'Prediction history saved and user data updated successfully.',
-      data: predictionData,
+      message: 'Prediction history saved successfully.',
+      data: {
+        ...predictionData,
+        createdAt: DateTime.now().setZone('Asia/Jakarta').toISO(),
+      },
     });
   } catch (error) {
     console.error('Error saving prediction history:', error);
     res.status(500).json({
       status: 'error',
       message: 'Failed to save prediction history.',
+    });
+  }
+});
+
+router.get('/predictions-history', isAuthenticated, async (req, res) => {
+  try {
+    const uid = req.user.uid;
+    const userDocRef = db.collection('users').doc(uid);
+
+    const userDoc = await userDocRef.get();
+    if (!userDoc.exists) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found.',
+      });
+    }
+
+    const predictionsSnapshot = await userDocRef
+      .collection('predictions-history')
+      .orderBy('predictionNumber', 'asc')
+      .get();
+    if (predictionsSnapshot.empty) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'No prediction history found.',
+      });
+    }
+
+    const predictions = predictionsSnapshot.docs.map((doc) => doc.data());
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Prediction history retrieved successfully.',
+      data: predictions,
+    });
+  } catch (error) {
+    console.error('Error retrieving prediction history:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to retrieve prediction history.',
     });
   }
 });
