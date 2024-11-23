@@ -15,9 +15,7 @@ const router = express.Router();
  */
 router.post('/registration', isAuthenticated, async (req, res) => {
   try {
-    const uid = req.user.uid;
-    const email = req.user.email;
-    const fullname = req.user.name;
+    const { uid, email, name: fullname } = req.user;
 
     const userData = {
       uid,
@@ -67,34 +65,6 @@ router.post('/registration', isAuthenticated, async (req, res) => {
   }
 });
 
-// USER ACCOUNT DELETION
-/**
- * ! Not tested yet
- * * Most likely working
- * TODO: Test it later
- */
-router.delete('/delete-account', isAuthenticated, async (req, res) => {
-  const uid = req.user.uid;
-
-  try {
-    await db.collection('users').doc(uid).delete();
-
-    await auth.deleteUser(uid);
-
-    res.status(200).json({
-      status: 'success',
-      message: 'Account and related data have been successfully deleted.',
-    });
-  } catch (error) {
-    console.error('Error deleting user account:', error);
-
-    res.status(500).json({
-      status: 'error',
-      message: error.message || 'An error occurred while deleting the account.',
-    });
-  }
-});
-
 // GET USER PROFILE DATA
 /**
  * ! Not tested yet
@@ -104,7 +74,6 @@ router.delete('/delete-account', isAuthenticated, async (req, res) => {
 router.get('/profile', isAuthenticated, async (req, res) => {
   try {
     const uid = req.user.uid;
-
     const userRef = db.collection('users').doc(uid);
     const userData = await userRef.get();
 
@@ -226,7 +195,9 @@ router.patch(
           });
       }
 
-      const fileName = `${Date.now()}_${path.basename(req.file.originalname)}`;
+      const fileName = `${DateTime.now()
+        .setZone('Asia/Jakarta')
+        .toFormat('yyyyMMdd_HHmmss')}_${path.basename(req.file.originalname)}`;
       const file = bucket.file(`profile_pictures/${fileName}`);
 
       await new Promise((resolve, reject) => {
@@ -236,9 +207,15 @@ router.patch(
         });
 
         blobStream.on('finish', async () => {
-          const publicUrl = `https://storage.googleapis.com/${bucket.name}/profile_pictures/${fileName}`;
-          await userRef.update({ profilePicture: publicUrl });
-          resolve(publicUrl);
+          try {
+            await file.makePublic();
+
+            const publicUrl = `https://storage.googleapis.com/${bucket.name}/profile_pictures/${fileName}`;
+            await userRef.update({ profilePicture: publicUrl });
+            resolve(publicUrl);
+          } catch (err) {
+            reject(err);
+          }
         });
 
         blobStream.on('error', (err) => reject(err));
@@ -327,6 +304,33 @@ router.post('/predict-history', isAuthenticated, async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: 'Failed to save prediction history.',
+    });
+  }
+});
+
+// USER ACCOUNT DELETION
+/**
+ * ! Not tested yet
+ * * Most likely working
+ * TODO: Test it later
+ */
+router.delete('/delete-account', isAuthenticated, async (req, res) => {
+  const uid = req.user.uid;
+
+  try {
+    await db.collection('users').doc(uid).delete();
+    await auth.deleteUser(uid);
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Account and related data have been successfully deleted.',
+    });
+  } catch (error) {
+    console.error('Error deleting user account:', error);
+
+    res.status(500).json({
+      status: 'error',
+      message: error.message || 'An error occurred while deleting the account.',
     });
   }
 });
