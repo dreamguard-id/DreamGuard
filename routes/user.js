@@ -7,7 +7,6 @@ const { isAuthenticated } = require('../middlewares/auth');
 const { uploadMiddleware } = require('../middlewares/upload');
 const { body, validationResult } = require('express-validator');
 
-
 const router = express.Router();
 
 // USER DATA REGISTRATION
@@ -133,13 +132,12 @@ router.get('/profile', isAuthenticated, async (req, res) => {
 // UPDATE OR ADD PROFILE DATA
 /**
  * ! Not tested yet
- * * File workflow might be problematic and wrong
+ * * Most likely working
  * TODO: Test it later
  */
 router.patch(
-  '/profile',
+  '/profile/data',
   isAuthenticated,
-  uploadMiddleware,
   [
     body('fullname')
       .optional()
@@ -167,57 +165,89 @@ router.patch(
     }
 
     const { fullname, gender, age } = req.body;
-
     const uid = req.user.uid;
-    const userRef = db.collection('users').doc(uid);
 
     try {
-      if (req.file) {
-        const oldData = await userRef.get();
-        if (oldData.exists && oldData.data().profilePicture) {
-          const oldFileName = oldData.data().profilePicture.split('/').pop();
-          await bucket
-            .file(oldFileName)
-            .delete()
-            .catch(() => {
-              console.warn('Failed to delete old profile picture.');
-            });
-        }
-
-        const fileName = `${Date.now()}_${path.basename(
-          req.file.originalname
-        )}`;
-        const file = bucket.file(fileName);
-
-        await new Promise((resolve, reject) => {
-          const blobStream = file.createWriteStream({
-            resumable: false,
-            contentType: req.file.mimetype,
-          });
-
-          blobStream.on('finish', async () => {
-            const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
-            await userRef.update({ profilePicture: publicUrl });
-            resolve(publicUrl);
-          });
-
-          blobStream.on('error', (err) => reject(err));
-          blobStream.end(req.file.buffer);
-        });
-      }
-
       const updates = {};
       if (fullname) updates.fullname = fullname;
       if (gender) updates.gender = gender;
       if (age) updates.age = age;
 
       if (Object.keys(updates).length > 0) {
-        await userRef.update(updates);
+        await db.collection('users').doc(uid).update(updates);
       }
 
       res.status(200).json({
         status: 'success',
-        message: 'Profile updated successfully',
+        message: 'Profile data updated successfully',
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: 'error',
+        message: error.message,
+      });
+    }
+  }
+);
+
+// UPDATE OR ADD PROFILE PICTURE
+/**
+ * ! Not tested yet
+ * * File workflow might be problematic and wrong
+ * TODO: Test it later
+ */
+router.patch(
+  '/profile/picture',
+  isAuthenticated,
+  uploadMiddleware,
+  async (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'No file uploaded',
+      });
+    }
+
+    const uid = req.user.uid;
+    const userRef = db.collection('users').doc(uid);
+
+    try {
+      const oldData = await userRef.get();
+      if (oldData.exists && oldData.data().profilePicture) {
+        const oldFileName = oldData
+          .data()
+          .profilePicture.split('/profile_pictures/')
+          .pop();
+        await bucket
+          .file(`profile_pictures/${oldFileName}`)
+          .delete()
+          .catch(() => {
+            console.warn('Failed to delete old profile picture.');
+          });
+      }
+
+      const fileName = `${Date.now()}_${path.basename(req.file.originalname)}`;
+      const file = bucket.file(`profile_pictures/${fileName}`);
+
+      await new Promise((resolve, reject) => {
+        const blobStream = file.createWriteStream({
+          resumable: false,
+          contentType: req.file.mimetype,
+        });
+
+        blobStream.on('finish', async () => {
+          const publicUrl = `https://storage.googleapis.com/${bucket.name}/profile_pictures/${fileName}`;
+          await userRef.update({ profilePicture: publicUrl });
+          resolve(publicUrl);
+        });
+
+        blobStream.on('error', (err) => reject(err));
+        blobStream.end(req.file.buffer);
+      });
+
+      res.status(200).json({
+        status: 'success',
+        message: 'Profile picture updated successfully',
       });
     } catch (error) {
       res.status(500).json({
@@ -302,3 +332,95 @@ router.post('/predict-history', isAuthenticated, async (req, res) => {
 });
 
 module.exports = router;
+
+// router.patch(
+//   '/profile',
+//   isAuthenticated,
+//   uploadMiddleware,
+//   [
+//     body('fullname')
+//       .optional()
+//       .isString()
+//       .notEmpty()
+//       .withMessage('Full name cannot be empty'),
+//     body('gender')
+//       .optional()
+//       .isString()
+//       .isIn(['male', 'female'])
+//       .withMessage('Gender must be either male or female'),
+//     body('age')
+//       .optional()
+//       .isInt({ min: 0, max: 150 })
+//       .withMessage('Age must be a number between 0 and 150'),
+//   ],
+//   async (req, res) => {
+//     const errors = validationResult(req);
+//     if (!errors.isEmpty()) {
+//       return res.status(400).json({
+//         status: 'error',
+//         message: 'Validation failed',
+//         errors: errors.array(),
+//       });
+//     }
+
+//     const { fullname, gender, age } = req.body;
+
+//     const uid = req.user.uid;
+//     const userRef = db.collection('users').doc(uid);
+
+//     try {
+//       if (req.file) {
+//         const oldData = await userRef.get();
+//         if (oldData.exists && oldData.data().profilePicture) {
+//           const oldFileName = oldData.data().profilePicture.split('/').pop();
+//           await bucket
+//             .file(oldFileName)
+//             .delete()
+//             .catch(() => {
+//               console.warn('Failed to delete old profile picture.');
+//             });
+//         }
+
+//         const fileName = `${Date.now()}_${path.basename(
+//           req.file.originalname
+//         )}`;
+//         const file = bucket.file(fileName);
+
+//         await new Promise((resolve, reject) => {
+//           const blobStream = file.createWriteStream({
+//             resumable: false,
+//             contentType: req.file.mimetype,
+//           });
+
+//           blobStream.on('finish', async () => {
+//             const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+//             await userRef.update({ profilePicture: publicUrl });
+//             resolve(publicUrl);
+//           });
+
+//           blobStream.on('error', (err) => reject(err));
+//           blobStream.end(req.file.buffer);
+//         });
+//       }
+
+//       const updates = {};
+//       if (fullname) updates.fullname = fullname;
+//       if (gender) updates.gender = gender;
+//       if (age) updates.age = age;
+
+//       if (Object.keys(updates).length > 0) {
+//         await userRef.update(updates);
+//       }
+
+//       res.status(200).json({
+//         status: 'success',
+//         message: 'Profile updated successfully',
+//       });
+//     } catch (error) {
+//       res.status(500).json({
+//         status: 'error',
+//         message: error.message,
+//       });
+//     }
+//   }
+// );
