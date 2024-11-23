@@ -28,12 +28,9 @@ exports.isAuthenticated = async (req, res, next) => {
 
     req.user = {
       uid: decodedToken.uid,
-      /**
-       * Kalo butuh data lain kaya di bawah ini, bisa diambil dari decodedToken :)
-       */
-      // email: decodedToken.email || null,
+      email: decodedToken.email || null,
+      name: decodedToken.name || null,
       // emailVerified: decodedToken.email_verified || false,
-      // name: decodedToken.name || null, //
     };
     next();
   } catch (error) {
