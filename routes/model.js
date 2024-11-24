@@ -5,7 +5,7 @@ const router = express.Router();
 
 // GET LATEST MODEL URL
 /**
- * * ALready tested (working)
+ * * Already tested (working)
  */
 router.get('/latest', async (req, res) => {
   try {
