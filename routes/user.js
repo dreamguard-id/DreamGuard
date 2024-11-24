@@ -13,7 +13,7 @@ const router = express.Router();
 /**
  * * Already tested (Working)
  */
-router.post('/registration', isAuthenticated, async (req, res) => {
+router.post('/register', isAuthenticated, async (req, res) => {
   try {
     const { uid, email, name: fullname } = req.user;
 
@@ -102,7 +102,7 @@ router.get('/profile', isAuthenticated, async (req, res) => {
  * * Already tested (Working)
  */
 router.patch(
-  '/profile/data',
+  '/profile',
   isAuthenticated,
   [
     body('fullname')
@@ -364,7 +364,7 @@ router.get('/predictions', isAuthenticated, async (req, res) => {
 /**
  * * Already tested (Working)
  */
-router.delete('/delete-account', isAuthenticated, async (req, res) => {
+router.delete('/account', isAuthenticated, async (req, res) => {
   const uid = req.user.uid;
 
   try {

@@ -12,7 +12,7 @@ app.use(express.json());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
-app.use('/api/model', modelRoutes);
+app.use('/api/models', modelRoutes);
 
 app.get('/', async (req, res) => {
   res.json({ status: 'Aku siap' });
