@@ -7,8 +7,8 @@ const { DateTime } = require('luxon');
 const router = express.Router();
 
 /**
- * For testing purposes only
- * TODO: Remove this route and file in production
+ * Buat testing aja
+ * TODO: Hapus file ini sebelum production
  */
 router.post(
   '/test-registration',
