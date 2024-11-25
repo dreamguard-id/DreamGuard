@@ -20,8 +20,7 @@
     "firebase": "^11.0.2",
     "firebase-admin": "^13.0.0",
     "luxon": "^3.5.0",
-    "multer": "^1.4.5-lts.1",
-    "nodemailer": "^6.9.16"
+    "multer": "^1.4.5-lts.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.7"
