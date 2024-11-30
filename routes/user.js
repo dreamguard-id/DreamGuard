@@ -15,14 +15,15 @@ const router = express.Router();
  */
 router.post('/register', isAuthenticated, async (req, res) => {
   try {
-    const { uid, email, name: fullname } = req.user;
+    const { uid, email, name} = req.user;
 
     const userData = {
       uid,
       email,
-      fullname,
+      name,
       age: null,
       gender: null,
+      occupation: null,
       profilePicture: null,
       createdAt: DateTime.now()
         .setZone('Asia/Jakarta')
@@ -36,6 +37,10 @@ router.post('/register', isAuthenticated, async (req, res) => {
       age: userData.age === null ? 'null (to be filled)' : userData.age,
       gender:
         userData.gender === null ? 'null (to be filled)' : userData.gender,
+      occupation:
+        userData.occupation === null
+          ? 'null (to be filled)'
+          : userData.occupation,
       profilePicture:
         userData.profilePicture === null
           ? 'null (to be filled)'
@@ -83,11 +88,11 @@ router.get('/profile', isAuthenticated, async (req, res) => {
       });
     }
 
-    const { email, fullname, gender, age, profilePicture } = userData.data();
+    const { email, name, gender, age, profilePicture } = userData.data();
 
     res.status(200).json({
       status: 'success',
-      data: { email, fullname, gender, age, profilePicture },
+      data: { email, name, gender, age, profilePicture },
     });
   } catch (error) {
     res.status(500).json({
@@ -106,20 +111,25 @@ router.patch(
   isAuthenticated,
   uploadMiddleware,
   [
-    body('fullname')
+    body('email')
+      .optional()
+      .isEmail()
+      .notEmpty()
+      .withMessage('Invalid email format'),
+    body('name')
       .optional()
       .isString()
       .notEmpty()
-      .withMessage('Full name cannot be empty'),
+      .withMessage('Name cannot be empty'),
+    body('age')
+      .optional()
+      .isInt({ min: 0, max: 150 })
+      .withMessage('Age must be a number between 0 and 150'),
     body('gender')
       .optional()
       .isString()
       .isIn(['male', 'female'])
       .withMessage('Gender must be either male or female'),
-    body('age')
-      .optional()
-      .isInt({ min: 0, max: 150 })
-      .withMessage('Age must be a number between 0 and 150'),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -131,14 +141,21 @@ router.patch(
       });
     }
 
-    const { fullname, gender, age } = req.body;
+    const { email, name, age, gender, occupation } = req.body;
     const uid = req.user.uid;
 
     try {
       const updates = {};
-      if (fullname) updates.fullname = fullname;
-      if (gender) updates.gender = gender;
+
+      if (email) {
+        await auth.updateUser(uid, { email });
+        updates.email = email;
+      }
+
+      if (name) updates.name = name;
       if (age) updates.age = age;
+      if (gender) updates.gender = gender;
+      if (occupation) updates.occupation = occupation;
 
       if (req.file) {
         const userRef = db.collection('users').doc(uid);
@@ -189,6 +206,7 @@ router.patch(
         updates.profilePicture = publicUrl;
       }
 
+      // Update Firestore
       if (Object.keys(updates).length > 0) {
         await db.collection('users').doc(uid).update(updates);
       }
