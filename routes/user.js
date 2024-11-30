@@ -97,13 +97,14 @@ router.get('/profile', isAuthenticated, async (req, res) => {
   }
 });
 
-// UPDATE OR ADD PROFILE DATA
+// UPDATE USER PROFILE DATA
 /**
  * * Already tested (Working)
  */
 router.patch(
   '/profile',
   isAuthenticated,
+  uploadMiddleware,
   [
     body('fullname')
       .optional()
@@ -139,96 +140,63 @@ router.patch(
       if (gender) updates.gender = gender;
       if (age) updates.age = age;
 
+      if (req.file) {
+        const userRef = db.collection('users').doc(uid);
+        const oldData = await userRef.get();
+
+        if (oldData.exists && oldData.data().profilePicture) {
+          const oldFileName = oldData
+            .data()
+            .profilePicture.split('/profile_pictures/')
+            .pop();
+
+          await bucket
+            .file(`profile_pictures/${oldFileName}`)
+            .delete()
+            .catch(() => {
+              console.warn('Failed to delete old profile picture.');
+            });
+        }
+
+        const fileName = `${DateTime.now()
+          .setZone('Asia/Jakarta')
+          .toFormat('yyyyMMdd_HHmmss')}_${path.basename(uid)}${path.extname(
+          req.file.originalname
+        )}`;
+
+        const file = bucket.file(`profile_pictures/${fileName}`);
+
+        const publicUrl = await new Promise((resolve, reject) => {
+          const blobStream = file.createWriteStream({
+            resumable: false,
+            contentType: req.file.mimetype,
+          });
+
+          blobStream.on('finish', async () => {
+            try {
+              resolve(
+                `https://storage.googleapis.com/${bucket.name}/profile_pictures/${fileName}`
+              );
+            } catch (err) {
+              reject(err);
+            }
+          });
+
+          blobStream.on('error', (err) => reject(err));
+          blobStream.end(req.file.buffer);
+        });
+
+        updates.profilePicture = publicUrl;
+      }
+
       if (Object.keys(updates).length > 0) {
         await db.collection('users').doc(uid).update(updates);
       }
 
       res.status(200).json({
         status: 'success',
-        message: 'Profile data updated successfully',
-      });
-    } catch (error) {
-      res.status(500).json({
-        status: 'error',
-        message: error.message,
-      });
-    }
-  }
-);
-
-// UPDATE OR ADD PROFILE PICTURE
-/**
- * * Already tested (Working)
- */
-router.patch(
-  '/profile/picture',
-  isAuthenticated,
-  uploadMiddleware,
-  async (req, res) => {
-    if (!req.file) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'No file uploaded',
-      });
-    }
-
-    const uid = req.user.uid;
-    const userRef = db.collection('users').doc(uid);
-
-    try {
-      const oldData = await userRef.get();
-      let responseMessage = '';
-
-      if (oldData.exists && oldData.data().profilePicture) {
-        const oldFileName = oldData
-          .data()
-          .profilePicture.split('/profile_pictures/')
-          .pop();
-
-        await bucket
-          .file(`profile_pictures/${oldFileName}`)
-          .delete()
-          .catch(() => {
-            console.warn('Failed to delete old profile picture.');
-          });
-
-        responseMessage =
-          'Profile picture successfully updated and old picture successfully deleted from storage.';
-      } else {
-        responseMessage = 'Profile picture successfully added.';
-      }
-
-      const fileName = `${DateTime.now()
-        .setZone('Asia/Jakarta')
-        .toFormat('yyyyMMdd_HHmmss')}_${path.basename(uid)}${path.extname(
-        req.file.originalname
-      )}`;
-
-      const file = bucket.file(`profile_pictures/${fileName}`);
-
-      await new Promise((resolve, reject) => {
-        const blobStream = file.createWriteStream({
-          resumable: false,
-          contentType: req.file.mimetype,
-        });
-
-        blobStream.on('finish', async () => {
-          try {
-            const publicUrl = `https://storage.googleapis.com/${bucket.name}/profile_pictures/${fileName}`;
-            await userRef.update({ profilePicture: publicUrl });
-            resolve(publicUrl);
-          } catch (err) {
-            reject(err);
-          }
-        });
-
-        blobStream.on('error', (err) => reject(err));
-        blobStream.end(req.file.buffer);
-      });
-
-      res.status(200).json({
-        status: 'success',
-        message: responseMessage,
+        message: 'Profile updated successfully',
+        data: updates,
       });
     } catch (error) {
       res.status(500).json({
