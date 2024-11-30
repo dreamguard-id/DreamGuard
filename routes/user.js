@@ -15,7 +15,7 @@ const router = express.Router();
  */
 router.post('/register', isAuthenticated, async (req, res) => {
   try {
-    const { uid, email, name} = req.user;
+    const { uid, email, name } = req.user;
 
     const userData = {
       uid,
@@ -206,7 +206,6 @@ router.patch(
         updates.profilePicture = publicUrl;
       }
 
-      // Update Firestore
       if (Object.keys(updates).length > 0) {
         await db.collection('users').doc(uid).update(updates);
       }
@@ -342,6 +341,60 @@ router.get('/predictions', isAuthenticated, async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: 'Failed to retrieve prediction history.',
+    });
+  }
+});
+
+// ADD NEW FEEDBACK
+/**
+ * * Already tested (Working)
+ */
+router.post('/feedback', isAuthenticated, async (req, res) => {
+  const { feedback } = req.body;
+
+  if (!feedback) {
+    return res.status(400).json({
+      status: 'error',
+      message: 'Feedback is required.',
+    });
+  }
+
+  try {
+    const uid = req.user.uid;
+    const email = req.user.email;
+    const name = req.user.name;
+
+    const userFeedbackRef = db.collection('feedbacks').doc(uid);
+    const userFeedbackSnapshot = await userFeedbackRef.get();
+
+    if (!userFeedbackSnapshot.exists) {
+      await userFeedbackRef.set({ email, name });
+    }
+
+    const feedbacksRef = userFeedbackRef.collection('feedbacks');
+    const feedbacksSnapshot = await feedbacksRef.get();
+    const feedbackNumber = feedbacksSnapshot.size + 1;
+
+    const newFeedback = {
+      feedback,
+      feedbackNumber,
+      createdAt: DateTime.now()
+        .setZone('Asia/Jakarta')
+        .toFormat("MMMM dd, yyyy 'at' h:mm:ss a 'UTC'Z"),
+    };
+
+    await feedbacksRef.add(newFeedback);
+
+    res.status(201).json({
+      status: 'success',
+      message: 'Feedback successfully added.',
+      data: newFeedback,
+    });
+  } catch (error) {
+    console.error('Error adding feedback:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to add feedback.',
     });
   }
 });
