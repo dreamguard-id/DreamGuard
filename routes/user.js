@@ -24,6 +24,7 @@ router.post('/register', isAuthenticated, async (req, res) => {
       age: null,
       gender: null,
       occupation: null,
+      sleepGoal: null,
       profilePicture: null,
       createdAt: DateTime.now()
         .setZone('Asia/Jakarta')
@@ -41,6 +42,10 @@ router.post('/register', isAuthenticated, async (req, res) => {
         userData.occupation === null
           ? 'null (to be filled)'
           : userData.occupation,
+      sleepGoal:
+        userData.sleepGoal === null
+          ? 'null (to be filled)'
+          : userData.sleepGoal,
       profilePicture:
         userData.profilePicture === null
           ? 'null (to be filled)'
@@ -228,6 +233,15 @@ router.patch(
 /**
  * * Already tested (Working)
  */
+function mapPredictionResult(predictionResultId) {
+  const resultMapping = {
+    1: 'Sleep Apnea',
+    2: 'No Sleep Disorder',
+    3: 'Sleep Insomnia',
+  };
+  return resultMapping[predictionResultId] || 'Unknown Result';
+}
+
 router.post('/predictions', isAuthenticated, async (req, res) => {
   const {
     gender,
@@ -242,7 +256,7 @@ router.post('/predictions', isAuthenticated, async (req, res) => {
     dailySteps,
     systolic,
     diastolic,
-    predictionResult,
+    predictionResultId,
   } = req.body;
 
   try {
@@ -262,9 +276,16 @@ router.post('/predictions', isAuthenticated, async (req, res) => {
       age: age || userDoc.data().age,
     });
 
+    const predictionResultText = mapPredictionResult(predictionResultId);
+
+    const createdAt = DateTime.now()
+      .setZone('Asia/Jakarta')
+      .toFormat('d MMMM yyyy');
+
     const predictionsRef = userDocRef.collection('predictions');
     const snapshot = await predictionsRef.get();
     const predictionNumber = snapshot.size + 1;
+
     const predictionData = {
       gender,
       age,
@@ -278,19 +299,18 @@ router.post('/predictions', isAuthenticated, async (req, res) => {
       dailySteps,
       systolic,
       diastolic,
-      predictionResult,
+      predictionResultId,
+      predictionResultText,
       predictionNumber,
-      createdAt: DateTime.now()
-        .setZone('Asia/Jakarta')
-        .toFormat("MMMM dd, yyyy 'at' h:mm:ss a 'UTC'Z"),
+      createdAt,
     };
 
-    await predictionsRef.add(predictionData);
+    const newPredictionRef = await predictionsRef.add(predictionData);
 
     res.status(201).json({
       status: 'success',
       message: 'Prediction history saved successfully.',
-      data: predictionData,
+      data: { id: newPredictionRef.id, ...predictionData },
     });
   } catch (error) {
     console.error('Error saving prediction history:', error);
@@ -300,6 +320,7 @@ router.post('/predictions', isAuthenticated, async (req, res) => {
     });
   }
 });
+
 
 // GET PREDICTIONS HISTORY
 /**
@@ -322,6 +343,7 @@ router.get('/predictions', isAuthenticated, async (req, res) => {
       .collection('predictions')
       .orderBy('predictionNumber', 'asc')
       .get();
+
     if (predictionsSnapshot.empty) {
       return res.status(404).json({
         status: 'error',
@@ -329,7 +351,12 @@ router.get('/predictions', isAuthenticated, async (req, res) => {
       });
     }
 
-    const predictions = predictionsSnapshot.docs.map((doc) => doc.data());
+    const predictions = predictionsSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      predictionResultId: doc.data().predictionResultId,
+      predictionResultText: doc.data().predictionResultText,
+      createdAt: doc.data().createdAt,
+    }));
 
     res.status(200).json({
       status: 'success',
@@ -344,6 +371,7 @@ router.get('/predictions', isAuthenticated, async (req, res) => {
     });
   }
 });
+
 
 // ADD NEW FEEDBACK
 /**
