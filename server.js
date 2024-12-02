@@ -18,7 +18,7 @@ app.get('/', async (req, res) => {
   res.json({ status: 'Aku siap' });
 });
 
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 8080;
 
 app.listen(port, () => {
   console.log(`DreamGuard server running on http://localhost:${port}`);
