@@ -416,11 +416,14 @@ router.post(
       };
 
       const newPredictionRef = await predictionsRef.add(predictionData);
+      await newPredictionRef.update({ id: newPredictionRef.id });
+
+      predictionData.id = newPredictionRef.id;
 
       res.status(201).json({
         status: 'success',
         message: 'Prediction history saved successfully.',
-        data: { id: newPredictionRef.id, ...predictionData },
+        data: predictionData,
       });
     } catch (error) {
       console.error('Error saving prediction history:', error);
@@ -522,6 +525,65 @@ router.get('/predictions/:id', isAuthenticated, async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: 'Failed to retrieve prediction details.',
+    });
+  }
+});
+
+// GET LATEST PREDICTION
+router.get('/predictions/latest', isAuthenticated, async (req, res) => {
+  try {
+    const uid = req.user.uid;
+    const userDocRef = db.collection('users').doc(uid);
+
+    const userDoc = await userDocRef.get();
+    if (!userDoc.exists) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found.',
+      });
+    }
+
+    const predictionsRef = userDocRef.collection('predictions');
+
+    const latestPredictionSnapshot = await predictionsRef
+      .orderBy('predictionNumber', 'desc')
+      .limit(1)
+      .get();
+
+    if (latestPredictionSnapshot.empty) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'No predictions found.',
+      });
+    }
+
+    const latestPrediction = latestPredictionSnapshot.docs[0].data();
+
+    const predictionData = {
+      gender: latestPrediction.gender,
+      age: latestPrediction.age,
+      hoursOfSleep: latestPrediction.hoursOfSleep,
+      occupation: latestPrediction.occupation,
+      activityLevel: latestPrediction.activityLevel,
+      stressLevel: latestPrediction.stressLevel,
+      weight: latestPrediction.weight,
+      height: latestPrediction.height,
+      heartRate: latestPrediction.heartRate,
+      dailySteps: latestPrediction.dailySteps,
+      systolic: latestPrediction.systolic,
+      diastolic: latestPrediction.diastolic,
+    };
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Latest prediction retrieved successfully.',
+      data: predictionData,
+    });
+  } catch (error) {
+    console.error('Error retrieving latest prediction:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to retrieve latest prediction.',
     });
   }
 });
@@ -644,12 +706,15 @@ router.post(
       };
 
       const schedulesRef = userDocRef.collection('sleepSchedules');
-      await schedulesRef.add(scheduleData);
+      const newScheduleDoc = await schedulesRef.add(scheduleData);
+
+      await newScheduleDoc.update({ id: newScheduleDoc.id });
+      scheduleData.id = newScheduleDoc.id;
 
       res.status(201).json({
         status: 'success',
         message: 'Sleep schedule created successfully',
-        data: { ...scheduleData, id },
+        data: scheduleData,
       });
     } catch (error) {
       console.error('Error creating sleep schedule:', error);
