@@ -646,10 +646,6 @@ router.post(
       const schedulesRef = userDocRef.collection('sleepSchedules');
       await schedulesRef.add(scheduleData);
 
-      const newScheduleRef = await schedulesRef.add(scheduleData);
-      const id = newScheduleRef.id;
-      await newScheduleRef.update({ id }); // Tambahkan ID ke dokumen
-
       res.status(201).json({
         status: 'success',
         message: 'Sleep schedule created successfully',
@@ -906,6 +902,175 @@ router.get('/sleep-goals', isAuthenticated, async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: 'Failed to retrieve sleep goals',
+    });
+  }
+});
+
+/**
+ * =====================================
+ * USER HOME PAGE STATISTICS
+ * =====================================
+ */
+
+// GET HOME PAGE DATA
+router.get('/homepage-data', isAuthenticated, async (req, res) => {
+  try {
+    const uid = req.user.uid;
+    const userDocRef = db.collection('users').doc(uid);
+
+    const userDoc = await userDocRef.get();
+    if (!userDoc.exists) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found.',
+      });
+    }
+
+    const userData = userDoc.data();
+
+    // Fetch predictions subcollection
+    const predictionsRef = userDocRef.collection('predictions');
+    const predictionsSnapshot = await predictionsRef.get();
+    const predictions = predictionsSnapshot.docs.map((doc) => doc.data());
+
+    // Fetch sleepSchedules subcollection
+    const sleepSchedulesRef = userDocRef.collection('sleepSchedules');
+    const sleepSchedulesSnapshot = await sleepSchedulesRef.get();
+    const sleepSchedules = sleepSchedulesSnapshot.docs.map((doc) => doc.data());
+
+    // 1. Last prediction card
+    const lastPrediction = predictions.reduce((max, current) => {
+      return current.predictionNumber > (max?.predictionNumber || 0)
+        ? current
+        : max;
+    }, null);
+
+    const lastPredictionCard = lastPrediction
+      ? {
+          id: lastPrediction.predictionNumber,
+          predictionResultText: lastPrediction.predictionResultText,
+          predictionResultId: lastPrediction.predictionResultId,
+          createdAt: lastPrediction.createdAt,
+        }
+      : null;
+
+    // 2. Average sleep time card
+    const totalSleepTime = sleepSchedules.reduce(
+      (acc, schedule) => acc + (schedule.actualDuration || 0),
+      0
+    );
+    const avgSleepTime = sleepSchedules.length
+      ? totalSleepTime / sleepSchedules.length
+      : 0;
+    const avgHours = Math.floor(avgSleepTime / 60);
+    const avgMinutes = Math.round(avgSleepTime % 60);
+
+    const sleepGoal = userData.sleepGoals || { hours: 0, minutes: 0 };
+    const sleepGoalInMinutes = sleepGoal.hours * 60 + sleepGoal.minutes;
+    const sleepTimeDiff = avgSleepTime - sleepGoalInMinutes;
+
+    const avgSleepTimeCard = {
+      avgSleepTime: `${avgHours}h ${avgMinutes}m`,
+      sleepGoal: `${sleepGoal.hours}h ${sleepGoal.minutes}m`,
+      difference: `${Math.abs(Math.floor(sleepTimeDiff / 60))}h ${Math.abs(
+        Math.round(sleepTimeDiff % 60)
+      )}m`,
+    };
+
+    // 3. Average stress level card
+    const totalStressLevel = predictions.reduce(
+      (acc, prediction) => acc + (prediction.stressLevel || 0),
+      0
+    );
+    const avgStressLevel = predictions.length
+      ? Math.round(totalStressLevel / predictions.length)
+      : 0;
+    const stressExpressions = [
+      'Very Calm – Completely relaxed, no noticeable stress.',
+      'Calm – Minor concerns but feeling in control.',
+      'Slightly Stressed – Occasional stress that doesn’t interfere with activities.',
+      'Mild Stress – Some noticeable tension, but manageable.',
+      'Moderate Stress – Balanced between tension and calmness.',
+      'Noticeable Stress – Feeling pressure, needing to take breaks to relax.',
+      'High Stress – Frequent stress impacting focus and daily activities.',
+      'Very High Stress – Significant pressure, struggling to manage effectively.',
+      'Extreme Stress – Overwhelmed, needing intervention to cope.',
+      'Severe Stress – Constant, unmanageable stress affecting well-being.',
+    ];
+    const avgStressLevelCard = {
+      avgStressLevel,
+      expression: stressExpressions[avgStressLevel - 1] || 'N/A',
+    };
+
+    // 4. Average activity level card
+    const totalActivityLevel = predictions.reduce(
+      (acc, prediction) => acc + (prediction.activityLevel || 0),
+      0
+    );
+    const avgActivityLevel = predictions.length
+      ? Math.round(totalActivityLevel / predictions.length)
+      : 0;
+    const activityExpressions = [
+      'Sedentary – Barely moving, sitting or lying down most of the day.',
+      'Very Low – Minimal movement, such as short walks occasionally.',
+      'Low – Light activity, standing or walking for short periods.',
+      'Slightly Active – Some moderate movement like light chores or brief exercise.',
+      'Moderate – Engaging in daily activities, like walking or light workouts.',
+      'Fairly Active – Regular moderate exercise or frequent movement.',
+      'Active – Daily exercise or an active job requiring consistent physical effort.',
+      'Very Active – Rigorous exercise or a highly physical lifestyle.',
+      'Extremely Active – Multiple hours of intense physical activity daily.',
+      'Hyperactive – Constantly on the move with very high energy expenditure.',
+    ];
+    const avgActivityLevelCard = {
+      avgActivityLevel,
+      expression: activityExpressions[avgActivityLevel - 1] || 'N/A',
+    };
+
+    // 5. Average sleep quality card
+    const totalSleepQuality = sleepSchedules.reduce(
+      (acc, schedule) => acc + (schedule.sleepQuality || 0),
+      0
+    );
+    const avgSleepQuality = sleepSchedules.length
+      ? Math.round(totalSleepQuality / sleepSchedules.length)
+      : 0;
+    const sleepQualityExpressions = [
+      'Very poor – Hardly any rest, felt like I didn’t sleep at all.',
+      'Poor – Tossed and turned all night, felt unrested.',
+      'Below average – Managed some sleep, but it wasn’t refreshing.',
+      'Fair – Got some sleep, but still felt tired.',
+      'Average – Slept okay, but could’ve been better.',
+      'Decent – Slept alright, but woke up a little groggy.',
+      'Good – Rested well, but not perfect.',
+      'Very good – Felt rested and energized.',
+      'Great – Slept deeply and woke up refreshed.',
+      'Outstanding – Best sleep ever! Completely rejuvenated.',
+    ];
+    const avgSleepQualityCard = {
+      avgSleepQuality,
+      expression: sleepQualityExpressions[avgSleepQuality - 1] || 'N/A',
+    };
+    res.json({
+      status: 'success',
+      message: 'Homepage data retrieved successfully.',
+      data: {
+        profilePicture: userData.profilePicture || null,
+        todaysDate: DateTime.now()
+          .setZone('Asia/Jakarta')
+          .toFormat('d MMMM yyyy'),
+        lastPredictionCard,
+        avgSleepTimeCard,
+        avgStressLevelCard,
+        avgActivityLevelCard,
+        avgSleepQualityCard,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching homepage data:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to fetch homepage data.',
     });
   }
 });
