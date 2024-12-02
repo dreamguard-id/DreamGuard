@@ -1,12 +1,16 @@
 const express = require('express');
 const path = require('path');
-const { DateTime } = require('luxon');
 const { auth, db } = require('../configs/firebase');
 const { bucket } = require('../configs/bucket');
 const { isAuthenticated } = require('../middlewares/auth');
 const { uploadMiddleware } = require('../middlewares/upload');
 const { body, validationResult } = require('express-validator');
-const { convertTo24HourFormat, calculateDuration, mapPredictionResult } = require('../utils/convert');
+const { DateTime } = require('luxon');
+const {
+  convertTo24HourFormat,
+  calculateDuration,
+  mapPredictionResult,
+} = require('../utils/convert');
 
 const router = express.Router();
 
@@ -664,7 +668,6 @@ router.get('/sleep-schedules', isAuthenticated, async (req, res) => {
   }
 });
 
-
 // UPDATE SLEEP SCHEDULE BY ID
 router.patch(
   '/sleep-schedules/:id',
@@ -722,9 +725,7 @@ router.patch(
     try {
       const uid = req.user.uid;
       const userDocRef = db.collection('users').doc(uid);
-      const scheduleRef = userDocRef
-        .collection('sleepSchedules')
-        .doc(id);
+      const scheduleRef = userDocRef.collection('sleepSchedules').doc(id);
 
       const scheduleDoc = await scheduleRef.get();
       if (!scheduleDoc.exists) {
