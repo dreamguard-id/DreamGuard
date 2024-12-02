@@ -14,10 +14,13 @@ const {
 
 const router = express.Router();
 
-// USER DATA REGISTRATION
 /**
- * * Already tested (Working)
+ * =====================================
+ * USER REGISTRATION AND DELETION
+ * =====================================
  */
+
+// ADD USER DATA TO DATABASE
 router.post('/register', isAuthenticated, async (req, res) => {
   try {
     const { uid, email, name } = req.user;
@@ -81,10 +84,35 @@ router.post('/register', isAuthenticated, async (req, res) => {
   }
 });
 
-// GET USER PROFILE DATA
+// USER ACCOUNT DELETION
+router.delete('/account', isAuthenticated, async (req, res) => {
+  const uid = req.user.uid;
+
+  try {
+    await db.collection('users').doc(uid).delete();
+    await auth.deleteUser(uid);
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Account and related data have been successfully deleted.',
+    });
+  } catch (error) {
+    console.error('Error deleting user account:', error);
+
+    res.status(500).json({
+      status: 'error',
+      message: error.message || 'An error occurred while deleting the account.',
+    });
+  }
+});
+
 /**
- * * Already tested (Working)
+ * =====================================
+ * USER PROFILE DATA MANAGEMENT
+ * =====================================
  */
+
+// GET USER PROFILE DATA
 router.get('/profile', isAuthenticated, async (req, res) => {
   try {
     const uid = req.user.uid;
@@ -113,9 +141,6 @@ router.get('/profile', isAuthenticated, async (req, res) => {
 });
 
 // UPDATE USER PROFILE DATA
-/**
- * * Already tested (Working)
- */
 router.patch(
   '/profile',
   isAuthenticated,
@@ -234,55 +259,101 @@ router.patch(
   }
 );
 
-// SAVE PREDICTIONS TO HISTORY
-/**
- * * Already tested (Working)
- */
-router.post('/predictions', isAuthenticated, async (req, res) => {
-  const {
-    gender,
-    age,
-    hoursOfSleep,
-    occupation,
-    activityLevel,
-    stressLevel,
-    weight,
-    height,
-    heartRate,
-    dailySteps,
-    systolic,
-    diastolic,
-    predictionResultId,
-  } = req.body;
+// ADD NEW FEEDBACK
+router.post('/feedback', isAuthenticated, async (req, res) => {
+  const { feedback } = req.body;
+
+  if (!feedback) {
+    return res.status(400).json({
+      status: 'error',
+      message: 'Feedback is required.',
+    });
+  }
 
   try {
     const uid = req.user.uid;
-    const userDocRef = db.collection('users').doc(uid);
+    const email = req.user.email;
+    const name = req.user.name;
 
-    const userDoc = await userDocRef.get();
-    if (!userDoc.exists) {
-      return res.status(404).json({
+    const userFeedbackRef = db.collection('feedbacks').doc(uid);
+    const userFeedbackSnapshot = await userFeedbackRef.get();
+
+    if (!userFeedbackSnapshot.exists) {
+      await userFeedbackRef.set({ email, name });
+    }
+
+    const feedbacksRef = userFeedbackRef.collection('feedbacks');
+    const feedbacksSnapshot = await feedbacksRef.get();
+    const feedbackNumber = feedbacksSnapshot.size + 1;
+
+    const newFeedback = {
+      feedback,
+      feedbackNumber,
+      createdAt: DateTime.now()
+        .setZone('Asia/Jakarta')
+        .toFormat("MMMM dd, yyyy 'at' h:mm:ss a 'UTC'Z"),
+    };
+
+    await feedbacksRef.add(newFeedback);
+
+    res.status(201).json({
+      status: 'success',
+      message: 'Feedback successfully added.',
+      data: newFeedback,
+    });
+  } catch (error) {
+    console.error('Error adding feedback:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to add feedback.',
+    });
+  }
+});
+
+/**
+ * =====================================
+ * USER PREDICTIONS DATA MANAGEMENT
+ * =====================================
+ */
+
+// ADD NEW PREDICTION
+router.post(
+  '/predictions',
+  isAuthenticated,
+  [
+    body('gender').notEmpty().withMessage('Gender is required'),
+    body('age').notEmpty().withMessage('Age is required'),
+    body('hoursOfSleep').notEmpty().withMessage('Hours of sleep is required'),
+    body('occupation').notEmpty().withMessage('Occupation is required'),
+    body('activityLevel').notEmpty().withMessage('Activity level is required'),
+    body('stressLevel').notEmpty().withMessage('Stress level is required'),
+    body('weight').notEmpty().withMessage('Weight is required'),
+    body('height').notEmpty().withMessage('Height is required'),
+    body('heartRate').notEmpty().withMessage('Heart rate is required'),
+    body('dailySteps').notEmpty().withMessage('Daily steps are required'),
+    body('systolic')
+      .notEmpty()
+      .withMessage('Systolic blood pressure is required'),
+    body('diastolic')
+      .notEmpty()
+      .withMessage('Diastolic blood pressure is required'),
+    body('predictionResultId')
+      .notEmpty()
+      .withMessage('Prediction result ID is required')
+      .isInt({ min: 0, max: 5 })
+      .withMessage('Prediction result ID must be an integer between 0 and 5'),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
         status: 'error',
-        message: 'User not found.',
+        message: 'Validation errors',
+        errors: errors.array(),
       });
     }
 
-    await userDocRef.update({
-      gender: gender || userDoc.data().gender,
-      age: age || userDoc.data().age,
-    });
-
-    const predictionResultText = mapPredictionResult(predictionResultId);
-
-    const createdAt = DateTime.now()
-      .setZone('Asia/Jakarta')
-      .toFormat('d MMMM yyyy');
-
-    const predictionsRef = userDocRef.collection('predictions');
-    const snapshot = await predictionsRef.get();
-    const predictionNumber = snapshot.size + 1;
-
-    const predictionData = {
+    const {
       gender,
       age,
       hoursOfSleep,
@@ -296,31 +367,72 @@ router.post('/predictions', isAuthenticated, async (req, res) => {
       systolic,
       diastolic,
       predictionResultId,
-      predictionResultText,
-      predictionNumber,
-      createdAt,
-    };
+    } = req.body;
 
-    const newPredictionRef = await predictionsRef.add(predictionData);
+    try {
+      const uid = req.user.uid;
+      const userDocRef = db.collection('users').doc(uid);
 
-    res.status(201).json({
-      status: 'success',
-      message: 'Prediction history saved successfully.',
-      data: { id: newPredictionRef.id, ...predictionData },
-    });
-  } catch (error) {
-    console.error('Error saving prediction history:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to save prediction history.',
-    });
+      const userDoc = await userDocRef.get();
+      if (!userDoc.exists) {
+        return res.status(404).json({
+          status: 'error',
+          message: 'User not found.',
+        });
+      }
+
+      await userDocRef.update({
+        gender: gender || userDoc.data().gender,
+        age: age || userDoc.data().age,
+      });
+
+      const predictionResultText = mapPredictionResult(predictionResultId);
+
+      const createdAt = DateTime.now()
+        .setZone('Asia/Jakarta')
+        .toFormat('d MMMM yyyy');
+
+      const predictionsRef = userDocRef.collection('predictions');
+      const snapshot = await predictionsRef.get();
+      const predictionNumber = snapshot.size + 1;
+
+      const predictionData = {
+        gender,
+        age,
+        hoursOfSleep,
+        occupation,
+        activityLevel,
+        stressLevel,
+        weight,
+        height,
+        heartRate,
+        dailySteps,
+        systolic,
+        diastolic,
+        predictionResultId,
+        predictionResultText,
+        predictionNumber,
+        createdAt,
+      };
+
+      const newPredictionRef = await predictionsRef.add(predictionData);
+
+      res.status(201).json({
+        status: 'success',
+        message: 'Prediction history saved successfully.',
+        data: { id: newPredictionRef.id, ...predictionData },
+      });
+    } catch (error) {
+      console.error('Error saving prediction history:', error);
+      res.status(500).json({
+        status: 'error',
+        message: 'Failed to save prediction history.',
+      });
+    }
   }
-});
+);
 
-// GET PREDICTIONS HISTORY
-/**
- * * Already tested (Working)
- */
+// GET ALL PREDICTIONS
 router.get('/predictions', isAuthenticated, async (req, res) => {
   try {
     const uid = req.user.uid;
@@ -368,9 +480,6 @@ router.get('/predictions', isAuthenticated, async (req, res) => {
 });
 
 // GET PREDICTIONS BY ID
-/**
- * * Already tested (Working)
- */
 router.get('/predictions/:id', isAuthenticated, async (req, res) => {
   try {
     const uid = req.user.uid;
@@ -417,10 +526,7 @@ router.get('/predictions/:id', isAuthenticated, async (req, res) => {
   }
 });
 
-// FILTER PREDICTIONS BY predictionResultId QUERY PARAMETER
-/**
- * * Already tested (Working)
- */
+// FILTER PREDICTIONS BY predictionResultId QUERY PARAM
 router.get('/predictions/filter', isAuthenticated, async (req, res) => {
   try {
     const uid = req.user.uid;
@@ -478,84 +584,11 @@ router.get('/predictions/filter', isAuthenticated, async (req, res) => {
   }
 });
 
-// ADD NEW FEEDBACK
 /**
- * * Already tested (Working)
+ * =====================================
+ * USER SLEEP SCHEDULES DATA MANAGEMENT
+ * =====================================
  */
-router.post('/feedback', isAuthenticated, async (req, res) => {
-  const { feedback } = req.body;
-
-  if (!feedback) {
-    return res.status(400).json({
-      status: 'error',
-      message: 'Feedback is required.',
-    });
-  }
-
-  try {
-    const uid = req.user.uid;
-    const email = req.user.email;
-    const name = req.user.name;
-
-    const userFeedbackRef = db.collection('feedbacks').doc(uid);
-    const userFeedbackSnapshot = await userFeedbackRef.get();
-
-    if (!userFeedbackSnapshot.exists) {
-      await userFeedbackRef.set({ email, name });
-    }
-
-    const feedbacksRef = userFeedbackRef.collection('feedbacks');
-    const feedbacksSnapshot = await feedbacksRef.get();
-    const feedbackNumber = feedbacksSnapshot.size + 1;
-
-    const newFeedback = {
-      feedback,
-      feedbackNumber,
-      createdAt: DateTime.now()
-        .setZone('Asia/Jakarta')
-        .toFormat("MMMM dd, yyyy 'at' h:mm:ss a 'UTC'Z"),
-    };
-
-    await feedbacksRef.add(newFeedback);
-
-    res.status(201).json({
-      status: 'success',
-      message: 'Feedback successfully added.',
-      data: newFeedback,
-    });
-  } catch (error) {
-    console.error('Error adding feedback:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to add feedback.',
-    });
-  }
-});
-
-// USER ACCOUNT DELETION
-/**
- * * Already tested (Working)
- */
-router.delete('/account', isAuthenticated, async (req, res) => {
-  const uid = req.user.uid;
-
-  try {
-    await db.collection('users').doc(uid).delete();
-    await auth.deleteUser(uid);
-
-    res.status(200).json({
-      status: 'success',
-      message: 'Account and related data have been successfully deleted.',
-    });
-  } catch (error) {
-    console.error('Error deleting user account:', error);
-
-    res.status(500).json({
-      status: 'error',
-      message: error.message || 'An error occurred while deleting the account.',
-    });
-  }
-});
 
 // ADD NEW SLEEP SCHEDULE
 router.post(
@@ -631,7 +664,7 @@ router.post(
   }
 );
 
-// GET ALL SLEEP SCHEDULES
+// GET ALL SLEEP SCHEDULE
 router.get('/sleep-schedules', isAuthenticated, async (req, res) => {
   try {
     const uid = req.user.uid;
@@ -668,7 +701,7 @@ router.get('/sleep-schedules', isAuthenticated, async (req, res) => {
   }
 });
 
-// UPDATE SLEEP SCHEDULE BY ID
+// UPDATE SLEEP SCHEDULE
 router.patch(
   '/sleep-schedules/:id',
   isAuthenticated,
@@ -787,5 +820,94 @@ router.patch(
     }
   }
 );
+
+// ADD OR UPDATE SLEEP GOALS
+router.patch(
+  '/sleep-goals',
+  isAuthenticated,
+  [
+    body('hours')
+      .notEmpty()
+      .withMessage('Hours is required')
+      .isInt({ min: 0, max: 24 })
+      .withMessage('Hours must be an integer between 0 and 24'),
+
+    body('minutes')
+      .notEmpty()
+      .withMessage('Minutes is required')
+      .isInt({ min: 0, max: 59 })
+      .withMessage('Minutes must be an integer between 0 and 59'),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ status: 'error', errors: errors.array() });
+    }
+
+    const { hours, minutes } = req.body;
+
+    try {
+      const uid = req.user.uid;
+      const userDocRef = db.collection('users').doc(uid);
+
+      await userDocRef.update({
+        sleepGoal: {
+          hours,
+          minutes,
+        },
+      });
+
+      res.status(200).json({
+        status: 'success',
+        message: 'Sleep goals updated successfully',
+        sleepGoal: `${hours}h ${minutes}m`,
+      });
+    } catch (error) {
+      console.error('Error updating sleep goals:', error);
+      res
+        .status(500)
+        .json({ status: 'error', message: 'Failed to update sleep goals' });
+    }
+  }
+);
+
+// GET SLEEP GOALS
+router.get('/sleep-goals', isAuthenticated, async (req, res) => {
+  try {
+    const uid = req.user.uid;
+    const userDocRef = db.collection('users').doc(uid);
+    const userDoc = await userDocRef.get();
+
+    if (!userDoc.exists) {
+      return res
+        .status(404)
+        .json({ status: 'error', message: 'User not found' });
+    }
+
+    const userData = userDoc.data();
+    const sleepGoal = userData.sleepGoal;
+
+    if (!sleepGoal) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'No sleep goals found for this user',
+      });
+    }
+
+    const { hours, minutes } = sleepGoal;
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Sleep goals retrieved successfully',
+      sleepGoal: `${hours}h ${minutes}m`,
+    });
+  } catch (error) {
+    console.error('Error retrieving sleep goals:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to retrieve sleep goals',
+    });
+  }
+});
 
 module.exports = router;
