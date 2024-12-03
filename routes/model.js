@@ -4,9 +4,6 @@ const { db } = require('../configs/firebase');
 const router = express.Router();
 
 // GET LATEST MODEL URL
-/**
- * * Already tested (working)
- */
 router.get('/latest', async (req, res) => {
   try {
     const [files] = await bucket.getFiles({ prefix: 'models/' });

@@ -85,38 +85,33 @@ router.post('/register', isAuthenticated, async (req, res) => {
 });
 
 // USER ACCOUNT DELETION
-router.delete('/account', isAuthenticated, async (req, res) => {
+router.delete('/user', isAuthenticated, async (req, res) => {
   const uid = req.user.uid;
 
   try {
     const userRef = db.collection('users').doc(uid);
-    const batch = db.batch(); // Menggunakan batch untuk penghapusan yang efisien
+    const batch = db.batch();
 
-    // Pengecekan dan penghapusan subkoleksi 'predictions' jika ada
     const predictionsSnapshot = await userRef.collection('predictions').get();
     if (!predictionsSnapshot.empty) {
       predictionsSnapshot.forEach((doc) => {
-        batch.delete(doc.ref); // Menandai dokumen untuk dihapus
+        batch.delete(doc.ref);
       });
     }
 
-    // Pengecekan dan penghapusan subkoleksi 'sleepSchedules' jika ada
     const sleepSchedulesSnapshot = await userRef
       .collection('sleepSchedules')
       .get();
     if (!sleepSchedulesSnapshot.empty) {
       sleepSchedulesSnapshot.forEach((doc) => {
-        batch.delete(doc.ref); // Menandai dokumen untuk dihapus
+        batch.delete(doc.ref);
       });
     }
 
-    // Eksekusi batch untuk menghapus subkoleksi
     await batch.commit();
 
-    // Hapus dokumen utama pengguna
     await userRef.delete();
 
-    // Hapus pengguna di Firebase Authentication
     await auth.deleteUser(uid);
 
     res.status(200).json({
