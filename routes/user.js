@@ -4,11 +4,12 @@ const { auth, db } = require('../configs/firebase');
 const { bucket } = require('../configs/bucket');
 const { isAuthenticated } = require('../middlewares/auth');
 const { uploadMiddleware } = require('../middlewares/upload');
-const { body, validationResult } = require('express-validator');
+const { body, validationResult, param } = require('express-validator');
 const { DateTime } = require('luxon');
 const {
   convertTo24HourFormat,
   calculateDuration,
+  calculateDurationDifference,
   mapPredictionResult,
 } = require('../utils/convert');
 
@@ -62,8 +63,7 @@ router.post('/register', isAuthenticated, async (req, res) => {
 
     res.status(201).json({
       status: 'success',
-      message:
-        'User data has been successfully added to the Firestore database.',
+      message: 'User profile retrieved successfully',
       data: responseData,
     });
   } catch (error) {
@@ -89,12 +89,40 @@ router.delete('/account', isAuthenticated, async (req, res) => {
   const uid = req.user.uid;
 
   try {
-    await db.collection('users').doc(uid).delete();
+    const userRef = db.collection('users').doc(uid);
+    const batch = db.batch(); // Menggunakan batch untuk penghapusan yang efisien
+
+    // Pengecekan dan penghapusan subkoleksi 'predictions' jika ada
+    const predictionsSnapshot = await userRef.collection('predictions').get();
+    if (!predictionsSnapshot.empty) {
+      predictionsSnapshot.forEach((doc) => {
+        batch.delete(doc.ref); // Menandai dokumen untuk dihapus
+      });
+    }
+
+    // Pengecekan dan penghapusan subkoleksi 'sleepSchedules' jika ada
+    const sleepSchedulesSnapshot = await userRef
+      .collection('sleepSchedules')
+      .get();
+    if (!sleepSchedulesSnapshot.empty) {
+      sleepSchedulesSnapshot.forEach((doc) => {
+        batch.delete(doc.ref); // Menandai dokumen untuk dihapus
+      });
+    }
+
+    // Eksekusi batch untuk menghapus subkoleksi
+    await batch.commit();
+
+    // Hapus dokumen utama pengguna
+    await userRef.delete();
+
+    // Hapus pengguna di Firebase Authentication
     await auth.deleteUser(uid);
 
     res.status(200).json({
       status: 'success',
-      message: 'Account and related data have been successfully deleted.',
+      message:
+        'Account and related data, including predictions and sleep schedules (if any), have been successfully deleted.',
     });
   } catch (error) {
     console.error('Error deleting user account:', error);
@@ -126,11 +154,13 @@ router.get('/profile', isAuthenticated, async (req, res) => {
       });
     }
 
-    const { email, name, gender, age, profilePicture } = userData.data();
+    const { email, name, gender, age, occupation, profilePicture } =
+      userData.data();
 
     res.status(200).json({
       status: 'success',
-      data: { email, name, gender, age, profilePicture },
+      message: 'Account and related data have been successfully deleted.',
+      data: { email, name, gender, age, occupation, profilePicture },
     });
   } catch (error) {
     res.status(500).json({
@@ -165,6 +195,10 @@ router.patch(
       .isString()
       .isIn(['male', 'female'])
       .withMessage('Gender must be either male or female'),
+    body('occupation')
+      .optional()
+      .isString()
+      .withMessage('Occupation must be a string'),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -482,53 +516,6 @@ router.get('/predictions', isAuthenticated, async (req, res) => {
   }
 });
 
-// GET PREDICTIONS BY ID
-router.get('/predictions/:id', isAuthenticated, async (req, res) => {
-  try {
-    const uid = req.user.uid;
-    const predictionId = req.params.id;
-
-    const userDocRef = db.collection('users').doc(uid);
-
-    const userDoc = await userDocRef.get();
-    if (!userDoc.exists) {
-      return res.status(404).json({
-        status: 'error',
-        message: 'User not found.',
-      });
-    }
-
-    const predictionDocRef = userDocRef
-      .collection('predictions')
-      .doc(predictionId);
-    const predictionDoc = await predictionDocRef.get();
-
-    if (!predictionDoc.exists) {
-      return res.status(404).json({
-        status: 'error',
-        message: 'Prediction not found.',
-      });
-    }
-
-    const predictionData = predictionDoc.data();
-
-    res.status(200).json({
-      status: 'success',
-      message: 'Prediction details retrieved successfully.',
-      data: {
-        id: predictionDoc.id,
-        ...predictionData,
-      },
-    });
-  } catch (error) {
-    console.error('Error retrieving prediction details:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to retrieve prediction details.',
-    });
-  }
-});
-
 // GET LATEST PREDICTION
 router.get('/predictions/latest', isAuthenticated, async (req, res) => {
   try {
@@ -642,6 +629,53 @@ router.get('/predictions/filter', isAuthenticated, async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: 'Failed to retrieve filtered predictions.',
+    });
+  }
+});
+
+// GET PREDICTIONS BY ID
+router.get('/predictions/:id', isAuthenticated, async (req, res) => {
+  try {
+    const uid = req.user.uid;
+    const predictionId = req.params.id;
+
+    const userDocRef = db.collection('users').doc(uid);
+
+    const userDoc = await userDocRef.get();
+    if (!userDoc.exists) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found.',
+      });
+    }
+
+    const predictionDocRef = userDocRef
+      .collection('predictions')
+      .doc(predictionId);
+    const predictionDoc = await predictionDocRef.get();
+
+    if (!predictionDoc.exists) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Prediction not found.',
+      });
+    }
+
+    const predictionData = predictionDoc.data();
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Prediction details retrieved successfully.',
+      data: {
+        id: predictionDoc.id,
+        ...predictionData,
+      },
+    });
+  } catch (error) {
+    console.error('Error retrieving prediction details:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to retrieve prediction details.',
     });
   }
 });
@@ -835,7 +869,9 @@ router.patch(
       if (wakeUpTime) updates.wakeUpTime = wakeUpTime;
 
       if (bedTime || wakeUpTime) {
-        const plannedDuration = calculateDuration(bedTime, wakeUpTime);
+        const bedTime24 = convertTo24HourFormat(bedTime);
+        const wakeUpTime24 = convertTo24HourFormat(wakeUpTime);
+        const plannedDuration = calculateDuration(bedTime24, wakeUpTime24);
         updates.plannedDuration = plannedDuration;
       }
 
@@ -845,12 +881,11 @@ router.patch(
       if (actualBedTime && actualWakeUpTime) {
         const actualBedTime24 = convertTo24HourFormat(actualBedTime);
         const actualWakeUpTime24 = convertTo24HourFormat(actualWakeUpTime);
-
         const actualDuration = calculateDuration(
           actualBedTime24,
           actualWakeUpTime24
         );
-        const difference = calculateDuration(
+        const difference = calculateDurationDifference(
           scheduleData.plannedDuration,
           actualDuration
         );
@@ -978,7 +1013,7 @@ router.get('/sleep-goals', isAuthenticated, async (req, res) => {
  */
 
 // GET HOME PAGE DATA
-router.get('/homepage-data', isAuthenticated, async (req, res) => {
+router.get('/statistics', isAuthenticated, async (req, res) => {
   try {
     const uid = req.user.uid;
     const userDocRef = db.collection('users').doc(uid);
@@ -1012,7 +1047,7 @@ router.get('/homepage-data', isAuthenticated, async (req, res) => {
 
     const lastPredictionCard = lastPrediction
       ? {
-          id: lastPrediction.predictionNumber,
+          id: lastPrediction.id,
           predictionResultText: lastPrediction.predictionResultText,
           predictionResultId: lastPrediction.predictionResultId,
           createdAt: lastPrediction.createdAt,
@@ -1020,17 +1055,25 @@ router.get('/homepage-data', isAuthenticated, async (req, res) => {
       : null;
 
     // 2. Average sleep time card
-    const totalSleepTime = sleepSchedules.reduce(
-      (acc, schedule) => acc + (schedule.actualDuration || 0),
-      0
+    const validSleepSchedules = sleepSchedules.filter(
+      (schedule) => schedule.actualDuration
     );
-    const avgSleepTime = sleepSchedules.length
-      ? totalSleepTime / sleepSchedules.length
+
+    const totalSleepTime = validSleepSchedules.reduce((acc, schedule) => {
+      const [hours, minutes] = schedule.actualDuration
+        .split(' ')
+        .map((part) => parseInt(part.replace(/[hm]/g, ''), 10));
+
+      return acc + hours * 60 + minutes;
+    }, 0);
+
+    const avgSleepTime = validSleepSchedules.length
+      ? totalSleepTime / validSleepSchedules.length
       : 0;
     const avgHours = Math.floor(avgSleepTime / 60);
     const avgMinutes = Math.round(avgSleepTime % 60);
 
-    const sleepGoal = userData.sleepGoals || { hours: 0, minutes: 0 };
+    const sleepGoal = userData.sleepGoal || { hours: 0, minutes: 0 };
     const sleepGoalInMinutes = sleepGoal.hours * 60 + sleepGoal.minutes;
     const sleepTimeDiff = avgSleepTime - sleepGoalInMinutes;
 
@@ -1043,13 +1086,19 @@ router.get('/homepage-data', isAuthenticated, async (req, res) => {
     };
 
     // 3. Average stress level card
-    const totalStressLevel = predictions.reduce(
-      (acc, prediction) => acc + (prediction.stressLevel || 0),
+    const validStressPredictions = predictions.filter(
+      (prediction) =>
+        prediction.stressLevel !== null && prediction.stressLevel !== undefined
+    );
+
+    const totalStressLevel = validStressPredictions.reduce(
+      (acc, prediction) => acc + prediction.stressLevel,
       0
     );
-    const avgStressLevel = predictions.length
-      ? Math.round(totalStressLevel / predictions.length)
+    const avgStressLevel = validStressPredictions.length
+      ? Math.round(totalStressLevel / validStressPredictions.length)
       : 0;
+
     const stressExpressions = [
       'Very Calm – Completely relaxed, no noticeable stress.',
       'Calm – Minor concerns but feeling in control.',
@@ -1062,19 +1111,27 @@ router.get('/homepage-data', isAuthenticated, async (req, res) => {
       'Extreme Stress – Overwhelmed, needing intervention to cope.',
       'Severe Stress – Constant, unmanageable stress affecting well-being.',
     ];
+
     const avgStressLevelCard = {
       avgStressLevel,
       expression: stressExpressions[avgStressLevel - 1] || 'N/A',
     };
 
     // 4. Average activity level card
-    const totalActivityLevel = predictions.reduce(
-      (acc, prediction) => acc + (prediction.activityLevel || 0),
+    const validActivityPredictions = predictions.filter(
+      (prediction) =>
+        prediction.activityLevel !== null &&
+        prediction.activityLevel !== undefined
+    );
+
+    const totalActivityLevel = validActivityPredictions.reduce(
+      (acc, prediction) => acc + prediction.activityLevel,
       0
     );
-    const avgActivityLevel = predictions.length
-      ? Math.round(totalActivityLevel / predictions.length)
+    const avgActivityLevel = validActivityPredictions.length
+      ? Math.round(totalActivityLevel / validActivityPredictions.length)
       : 0;
+
     const activityExpressions = [
       'Sedentary – Barely moving, sitting or lying down most of the day.',
       'Very Low – Minimal movement, such as short walks occasionally.',
@@ -1087,19 +1144,27 @@ router.get('/homepage-data', isAuthenticated, async (req, res) => {
       'Extremely Active – Multiple hours of intense physical activity daily.',
       'Hyperactive – Constantly on the move with very high energy expenditure.',
     ];
+
     const avgActivityLevelCard = {
       avgActivityLevel,
       expression: activityExpressions[avgActivityLevel - 1] || 'N/A',
     };
 
     // 5. Average sleep quality card
-    const totalSleepQuality = sleepSchedules.reduce(
-      (acc, schedule) => acc + (schedule.sleepQuality || 0),
+    const validSleepQualitySchedules = sleepSchedules.filter(
+      (schedule) =>
+        schedule.sleepQuality !== null && schedule.sleepQuality !== undefined
+    );
+
+    const totalSleepQuality = validSleepQualitySchedules.reduce(
+      (acc, schedule) => acc + schedule.sleepQuality,
       0
     );
-    const avgSleepQuality = sleepSchedules.length
-      ? Math.round(totalSleepQuality / sleepSchedules.length)
+
+    const avgSleepQuality = validSleepQualitySchedules.length
+      ? Math.round(totalSleepQuality / validSleepQualitySchedules.length)
       : 0;
+
     const sleepQualityExpressions = [
       'Very poor – Hardly any rest, felt like I didn’t sleep at all.',
       'Poor – Tossed and turned all night, felt unrested.',
@@ -1112,15 +1177,18 @@ router.get('/homepage-data', isAuthenticated, async (req, res) => {
       'Great – Slept deeply and woke up refreshed.',
       'Outstanding – Best sleep ever! Completely rejuvenated.',
     ];
+
     const avgSleepQualityCard = {
       avgSleepQuality,
       expression: sleepQualityExpressions[avgSleepQuality - 1] || 'N/A',
     };
+
     res.json({
       status: 'success',
       message: 'Homepage data retrieved successfully.',
       data: {
         profilePicture: userData.profilePicture || null,
+        name: userData.name,
         todaysDate: DateTime.now()
           .setZone('Asia/Jakarta')
           .toFormat('d MMMM yyyy'),

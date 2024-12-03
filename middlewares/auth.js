@@ -16,21 +16,19 @@ exports.isAuthenticated = async (req, res, next) => {
     // ! Mock token buat testing, jangan lupa di delete
     if (token === 'mock-token') {
       req.user = {
-        uid: 'zglQYzxLWqTGHxJlenc6v4IOp6O2',
+        uid: 'MkJN4jszrZhoDBwUVrtV0V6kNg12',
         email: 'darrenarkaan@gmail.com',
-        name: 'Darren Arkaannnn',
+        name: 'darren arqiarkaan',
       };
       return next();
     }
 
-    // Ini verifikasi token dari Firebase yang aslinya
     const decodedToken = await auth.verifyIdToken(token);
 
     req.user = {
       uid: decodedToken.uid,
-      email: decodedToken.email || null,
-      name: decodedToken.name || null,
-      // emailVerified: decodedToken.email_verified || false,
+      email: decodedToken.email,
+      name: decodedToken.name || decodedToken.given_name,
     };
     next();
   } catch (error) {
