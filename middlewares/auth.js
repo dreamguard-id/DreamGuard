@@ -13,16 +13,6 @@ exports.isAuthenticated = async (req, res, next) => {
 
     const token = authHeader.split(' ')[1];
 
-    // ! Mock token buat testing, jangan lupa di delete
-    if (token === 'mock-token') {
-      req.user = {
-        uid: 'MkJN4jszrZhoDBwUVrtV0V6kNg12',
-        email: 'darrenarkaan@gmail.com',
-        name: 'darren arqiarkaan',
-      };
-      return next();
-    }
-
     const decodedToken = await auth.verifyIdToken(token);
 
     req.user = {
