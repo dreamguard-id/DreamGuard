@@ -39,7 +39,6 @@ app.get('/', async (req, res) => {
       message: 'API is ready and all services are connected',
       timestamp: serverTime,
       version,
-      environment,
       services: {
         firestore: {
           connected: true,
