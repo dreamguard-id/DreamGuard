@@ -85,7 +85,7 @@ router.post('/register', isAuthenticated, async (req, res) => {
 });
 
 // USER ACCOUNT DELETION
-router.delete('/user', isAuthenticated, async (req, res) => {
+router.delete('/account', isAuthenticated, async (req, res) => {
   const uid = req.user.uid;
 
   try {
