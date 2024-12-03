@@ -154,7 +154,7 @@ router.get('/profile', isAuthenticated, async (req, res) => {
 
     res.status(200).json({
       status: 'success',
-      message: 'Account and related data have been successfully deleted.',
+      message: 'User profile retrieved successfully.',
       data: { email, name, gender, age, occupation, profilePicture },
     });
   } catch (error) {
