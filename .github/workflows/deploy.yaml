@@ -38,11 +38,10 @@ jobs:
         run: |
           gcloud run deploy ${{ env.SERVICE_NAME }} \
             --image ${{ env.DOCKER_IMAGE_URL }}:latest \
+            --set-env-vars= \
+            --set-secrets=CLOUD_STORAGE_BUCKET=BUCKET_NAME:latest \
             --region asia-southeast2 \
             --platform managed \
-            --set-secrets=CLOUD_STORAGE_BUCKET=BUCKET_NAME:latest \
-            --allow-unauthenticated
-
-      - name: Update Traffic
-        run: |
-          gcloud run services update-traffic ${{ env.SERVICE_NAME }} --to-latest
+            --allow-unauthenticated \
+            --project ${{ env.PROJECT_ID }} \
+          && gcloud run services update-traffic ${{ env.SERVICE_NAME }} --to-latest
