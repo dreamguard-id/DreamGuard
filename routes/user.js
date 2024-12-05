@@ -33,7 +33,11 @@ router.post(
       .withMessage('Please provide a valid email address format')
       .notEmpty()
       .withMessage('Email cannot be empty'),
-    body('name').notEmpty().withMessage('Name cannot be empty'),
+    body('name')
+      .isString()
+      .withMessage('Name must be a string')
+      .notEmpty()
+      .withMessage('Name cannot be empty'),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -326,7 +330,16 @@ router.post('/feedback', isAuthenticated, async (req, res) => {
   try {
     const uid = req.user.uid;
     const email = req.user.email;
-    const name = req.user.name;
+
+    const userDoc = await db.collection('users').doc(uid).get();
+    if (!userDoc.exists) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'User not found.',
+      });
+    }
+
+    const name = userDoc.data().name;
 
     const userFeedbackRef = db.collection('feedbacks').doc(uid);
     const userFeedbackSnapshot = await userFeedbackRef.get();
