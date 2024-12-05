@@ -3,7 +3,7 @@ const { bucket } = require('../configs/bucket');
 const { db } = require('../configs/firebase');
 const router = express.Router();
 
-// GET LATEST .TFLITE MODEL URL
+// GET LATEST TFLITE MODEL URL
 router.get('/latest', async (req, res) => {
   try {
     const [files] = await bucket.getFiles({ prefix: 'models/' });
