@@ -22,67 +22,91 @@ const router = express.Router();
  */
 
 // ADD USER DATA TO DATABASE
-router.post('/register', isAuthenticated, async (req, res) => {
-  try {
-    const { uid, email, name } = req.user;
+const { body, validationResult } = require('express-validator');
 
-    const userData = {
-      uid,
-      email,
-      name,
-      age: null,
-      gender: null,
-      occupation: null,
-      sleepGoal: null,
-      profilePicture: null,
-      createdAt: DateTime.now()
-        .setZone('Asia/Jakarta')
-        .toFormat("MMMM dd, yyyy 'at' h:mm:ss a 'UTC'Z"),
-    };
-
-    await db.collection('users').doc(uid).set(userData);
-
-    const responseData = {
-      ...userData,
-      age: userData.age === null ? 'null (to be filled)' : userData.age,
-      gender:
-        userData.gender === null ? 'null (to be filled)' : userData.gender,
-      occupation:
-        userData.occupation === null
-          ? 'null (to be filled)'
-          : userData.occupation,
-      sleepGoal:
-        userData.sleepGoal === null
-          ? 'null (to be filled)'
-          : userData.sleepGoal,
-      profilePicture:
-        userData.profilePicture === null
-          ? 'null (to be filled)'
-          : userData.profilePicture,
-    };
-
-    res.status(201).json({
-      status: 'success',
-      message: 'User profile retrieved successfully',
-      data: responseData,
-    });
-  } catch (error) {
-    console.error('Error registering user data:', error);
-
-    if (error.code === 'auth/user-not-found') {
-      return res.status(404).json({
+router.post(
+  '/register',
+  isAuthenticated,
+  [
+    body('email')
+      .isEmail()
+      .withMessage('Please provide a valid email address format')
+      .notEmpty()
+      .withMessage('Email cannot be empty'),
+    body('name').notEmpty().withMessage('Name cannot be empty'),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
         status: 'error',
-        message: 'User not found, please register first.',
+        message: 'Validation failed',
+        errors: errors.array(),
       });
     }
 
-    res.status(500).json({
-      status: 'error',
-      message:
-        error.message || 'An unknown error occurred during registration.',
-    });
+    try {
+      const { uid } = req.user;
+      const { email, name } = req.body;
+
+      const userData = {
+        uid,
+        email,
+        name,
+        age: null,
+        gender: null,
+        occupation: null,
+        sleepGoal: null,
+        profilePicture: null,
+        createdAt: DateTime.now()
+          .setZone('Asia/Jakarta')
+          .toFormat("MMMM dd, yyyy 'at' h:mm:ss a 'UTC'Z"),
+      };
+
+      await db.collection('users').doc(uid).set(userData);
+
+      const responseData = {
+        ...userData,
+        age: userData.age === null ? 'null (to be filled)' : userData.age,
+        gender:
+          userData.gender === null ? 'null (to be filled)' : userData.gender,
+        occupation:
+          userData.occupation === null
+            ? 'null (to be filled)'
+            : userData.occupation,
+        sleepGoal:
+          userData.sleepGoal === null
+            ? 'null (to be filled)'
+            : userData.sleepGoal,
+        profilePicture:
+          userData.profilePicture === null
+            ? 'null (to be filled)'
+            : userData.profilePicture,
+      };
+
+      res.status(201).json({
+        status: 'success',
+        message: 'User profile retrieved successfully',
+        data: responseData,
+      });
+    } catch (error) {
+      console.error('Error registering user data:', error);
+
+      if (error.code === 'auth/user-not-found') {
+        return res.status(404).json({
+          status: 'error',
+          message: 'User not found, please register first.',
+        });
+      }
+
+      res.status(500).json({
+        status: 'error',
+        message:
+          error.message || 'An unknown error occurred during registration.',
+      });
+    }
   }
-});
+);
 
 // USER ACCOUNT DELETION
 router.delete('/account', isAuthenticated, async (req, res) => {
