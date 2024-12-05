@@ -21,9 +21,6 @@ const router = express.Router();
  * =====================================
  */
 
-// ADD USER DATA TO DATABASE
-const { body, validationResult } = require('express-validator');
-
 router.post(
   '/register',
   isAuthenticated,
