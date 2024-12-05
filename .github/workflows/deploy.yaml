@@ -32,7 +32,8 @@ jobs:
 
       - name: Build and Push Docker Image with Cloud Build
         run: |
-          gcloud builds submit --tag ${{ env.DOCKER_IMAGE_URL }}:latest
+          gcloud builds submit --tag ${{ env.DOCKER_IMAGE_URL }}:latest \
+            --substitutions=_LOGGING=GCS_ONLY
 
       - name: Deploy to Cloud Run
         run: |
@@ -46,5 +47,3 @@ jobs:
       - name: Update Traffic
         run: |
           gcloud run services update-traffic ${{ env.SERVICE_NAME }} --to-latest
-    options:
-      logging: CLOUD_LOGGING_ONLY
