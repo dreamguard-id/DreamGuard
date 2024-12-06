@@ -2,9 +2,6 @@
 
 ## Bangkit Capstone Team ID: C242-PS002
 
-### Project Overview
-DreamGuard is an innovative cloud-based solution for sleep health monitoring and disorder detection, leveraging advanced cloud computing technologies to provide comprehensive sleep analysis.
-
 ## 🌐 Cloud Architecture
 
 ![Cloud Architecture (Fix)](https://github.com/user-attachments/assets/5bad05bd-b7a6-4250-9f78-bf4d02cbf4bf)
@@ -269,7 +266,7 @@ gcloud projects add-iam-policy-binding capstone-project-dreamguard \
 Add the following secrets to your GitHub repository:
 - `GCP_SA_KEY` (contents of service-account-key.json)
 
-#### 9.2 Change the ENV Value Inside the deploy.yaml
+#### 9.3 Change the ENV Value Inside the deploy.yaml
 Change following env in the .github/workflows/deploy.yaml according to your project info:
 - `SERVICE_NAME`: (your cloud run service name)
 - `PROJECT_ID`: (your google cloud project id)
