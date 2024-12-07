@@ -25,16 +25,16 @@ router.post(
   '/register',
   isAuthenticated,
   [
-    body('email')
-      .isEmail()
-      .withMessage('Please provide a valid email address format')
-      .notEmpty()
-      .withMessage('Email cannot be empty'),
     body('name')
-      .isString()
-      .withMessage('Name must be a string')
-      .notEmpty()
-      .withMessage('Name cannot be empty'),
+      .optional()
+      .isLength({ min: 1 })
+      .withMessage('Name cannot be just an empty string')
+      .matches(/^[A-Za-z\s]+$/)
+      .withMessage('Name must contain only letters and spaces'),
+    body('email')
+      .optional()
+      .isEmail()
+      .withMessage('Please provide a valid email address format'),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -46,10 +46,20 @@ router.post(
       });
     }
 
-    try {
-      const { uid } = req.user;
-      const { email, name } = req.body;
+    let { name, email } = req.body;
+    if (!name) name = req.user.name;
+    if (!email) email = req.user.email;
 
+    if (!name || !email) {
+      return res.status(400).json({
+        status: 'error',
+        message: `${!name ? 'Name' : 'Email'} is required and cannot be empty`,
+      });
+    }
+
+    const uid = req.user.uid;
+
+    try {
       const userData = {
         uid,
         email,
@@ -85,9 +95,10 @@ router.post(
             : userData.profilePicture,
       };
 
+      // Berikan respons sukses
       res.status(201).json({
         status: 'success',
-        message: 'User profile retrieved successfully',
+        message: 'User registered successfully to the database.',
         data: responseData,
       });
     } catch (error) {

@@ -18,6 +18,7 @@ exports.isAuthenticated = async (req, res, next) => {
     req.user = {
       uid: decodedToken.uid,
       email: decodedToken.email,
+      name: decodedToken.name || decodedToken.display_name,
     };
     next();
   } catch (error) {
