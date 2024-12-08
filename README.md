@@ -23,5 +23,5 @@ Public Dataset
 2. Train and Val Loss (train = 0.29 and val = 0.41)<br>
 <img src="https://github.com/user-attachments/assets/8f917eb7-0dab-4761-b43e-ff89601211f7" alt="4" width="500" height="auto"> <br>
 
-3. Test Accuracy (86.95) <br>
+3. Test Accuracy (85.1) <br>
 <img src="https://github.com/user-attachments/assets/5ff9c6f1-4309-4e74-8ef8-26378a465964" alt="4" width="700" height="auto"><br>
