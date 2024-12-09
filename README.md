@@ -7,13 +7,13 @@ DreamGuard is a mobile sleep health application designed to help people effectiv
 # Team 🤝 :
 |          Nama         | Bangkit-ID |       Path       |       GitHub Profile       |
 |:---------------------:|:----------:|:----------------:|:--------------------------:|
-|  Annisa Hasna Salsabila  |  M002B4KX0579  | Machine Learning | [hasnanisalsa](https://github.com/orgs/dreamguard-id/people/hasnanisalsa) |
-|  Jihan Camilla Az Zahra  |  M002B4KX2068  | Machine Learning |
-|  Vanya Maurletta  |  M002B4KX4403  | Machine Learning |
-|   Darren Arqiarkaan Dyazfajri Teddy    |  C128B4KY1005  |  Cloud Computing |
-|  George Amadeus Putra Hardie  |  C476B4KY1596  |  Cloud Computing |
+|  Annisa Hasna Salsabila  |  M002B4KX0579  | Machine Learning | [hasnanisalsa](https://github.com/hasnanisalsa) |
+|  Jihan Camilla Az Zahra  |  M002B4KX2068  | Machine Learning | [jihancamilla24](https://github.com/jihancamilla24) |
+|  Vanya Maurletta  |  M002B4KX4403  | Machine Learning | [vanyamaurletta](https://github.com/vanyamaurletta) |
+|   Darren Arqiarkaan Dyazfajri Teddy    |  C128B4KY1005  |  Cloud Computing | [arqiarkaan](https://github.com/arqiarkaan) |
+|  George Amadeus Putra Hardie  |  C476B4KY1596  |  Cloud Computing | [papahoudini](https://github.com/papahoudini) |
 |    Muhamad Sabil Fausta      |  A299B4KY2661  |      Mobile Development     |
-|    Farhan Ramadhany      |  A476B4KY1412  |      Mobile Development     |
+|    Farhan Ramadhany      |  A476B4KY1412  |      Mobile Development     | [frhnrmdhny](https://github.com/frhnrmdhny) |
 
 ## Bangkit Capstone Team ID : C242-PS002
 
