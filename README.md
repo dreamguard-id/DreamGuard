@@ -7,7 +7,7 @@ DreamGuard is a mobile sleep health application designed to help people effectiv
 # Team 🤝 :
 |          Nama         | Bangkit-ID |       Path       |       GitHub Profile       |
 |:---------------------:|:----------:|:----------------:|:--------------------------:|
-|  Annisa Hasna Salsabila  |  M002B4KX0579  | Machine Learning |
+|  Annisa Hasna Salsabila  |  M002B4KX0579  | Machine Learning | [hasnanisalsa](https://github.com/orgs/dreamguard-id/people/hasnanisalsa) |
 |  Jihan Camilla Az Zahra  |  M002B4KX2068  | Machine Learning |
 |  Vanya Maurletta  |  M002B4KX4403  | Machine Learning |
 |   Darren Arqiarkaan Dyazfajri Teddy    |  C128B4KY1005  |  Cloud Computing |
