@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
 const userRoutes = require('./routes/user');
-const modelRoutes = require('./routes/model');
 const { db } = require('./configs/firebase');
 const { bucket } = require('./configs/bucket');
 require('dotenv').config();
@@ -12,7 +11,6 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/api/user', userRoutes);
-app.use('/api/models', modelRoutes);
 
 app.get('/', async (req, res) => {
   try {
@@ -36,7 +34,7 @@ app.get('/', async (req, res) => {
 
     res.json({
       status: 'OK',
-      message: 'API is ready and all services are connected',
+      message: 'DreamGuard API is ready and all services are connected',
       timestamp: serverTime,
       version,
       services: {

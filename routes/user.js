@@ -6,11 +6,11 @@ const { isAuthenticated } = require('../middlewares/auth');
 const { uploadMiddleware } = require('../middlewares/upload');
 const { body, validationResult, param } = require('express-validator');
 const { DateTime } = require('luxon');
+const { predict } = require('../configs/model');
 const {
   convertTo24HourFormat,
   calculateDuration,
   calculateDurationDifference,
-  mapPredictionResult,
 } = require('../utils/convert');
 
 const router = express.Router();
@@ -395,28 +395,39 @@ router.post(
   '/predictions',
   isAuthenticated,
   [
-    body('gender').notEmpty().withMessage('Gender is required'),
-    body('age').notEmpty().withMessage('Age is required'),
-    body('hoursOfSleep').notEmpty().withMessage('Hours of sleep is required'),
-    body('sleepQuality').notEmpty().withMessage('Sleep quality is required'),
-    body('occupation').notEmpty().withMessage('Occupation is required'),
-    body('activityLevel').notEmpty().withMessage('Activity level is required'),
-    body('stressLevel').notEmpty().withMessage('Stress level is required'),
-    body('weight').notEmpty().withMessage('Weight is required'),
-    body('height').notEmpty().withMessage('Height is required'),
-    body('heartRate').notEmpty().withMessage('Heart rate is required'),
-    body('dailySteps').notEmpty().withMessage('Daily steps are required'),
+    body('gender')
+      .isInt({ min: 1, max: 2 })
+      .withMessage('Gender must be 1 (Female) or 2 (Male)'),
+    body('age').isInt({ min: 1 }).withMessage('Age must be a positive number'),
+    body('sleepDuration')
+      .isFloat({ min: 0 })
+      .withMessage('Hours of sleep must be a non-negative number'),
+    body('sleepQuality')
+      .isInt({ min: 1, max: 10 })
+      .withMessage('Sleep quality must be an integer between 1 and 10'),
+    body('occupation')
+      .isInt({ min: 1, max: 11 })
+      .withMessage('Occupation must be an integer between 1 and 11'),
+    body('activityLevel')
+      .isInt({ min: 1, max: 100 })
+      .withMessage('Activity level must be an integer between 1 and 100'),
+    body('stressLevel')
+      .isInt({ min: 1, max: 10 })
+      .withMessage('Stress level must be an integer between 1 and 10'),
+    body('weight').isInt({ min: 1 }).withMessage('Weight must be positive'),
+    body('height').isInt({ min: 1 }).withMessage('Height must be positive'),
+    body('heartRate')
+      .isInt({ min: 1 })
+      .withMessage('Heart rate must be a positive integer'),
+    body('dailySteps')
+      .isInt({ min: 0 })
+      .withMessage('Daily steps must be a non-negative integer'),
     body('systolic')
-      .notEmpty()
-      .withMessage('Systolic blood pressure is required'),
+      .isInt({ min: 1 })
+      .withMessage('Systolic blood pressure must be a positive integer'),
     body('diastolic')
-      .notEmpty()
-      .withMessage('Diastolic blood pressure is required'),
-    body('predictionResultId')
-      .notEmpty()
-      .withMessage('Prediction result ID is required')
-      .isInt({ min: 0, max: 5 })
-      .withMessage('Prediction result ID must be an integer between 0 and 5'),
+      .isInt({ min: 1 })
+      .withMessage('Diastolic blood pressure must be a positive integer'),
   ],
   async (req, res) => {
     const errors = validationResult(req);
@@ -431,7 +442,7 @@ router.post(
     const {
       gender,
       age,
-      hoursOfSleep,
+      sleepDuration,
       sleepQuality,
       occupation,
       activityLevel,
@@ -442,40 +453,72 @@ router.post(
       dailySteps,
       systolic,
       diastolic,
-      predictionResultId,
     } = req.body;
 
     try {
       const uid = req.user.uid;
       const userDocRef = db.collection('users').doc(uid);
+      const predictionsRef = userDocRef.collection('predictions');
 
-      const userDoc = await userDocRef.get();
-      if (!userDoc.exists) {
-        return res.status(404).json({
-          status: 'error',
-          message: 'User not found.',
-        });
+      const bmi = weight / Math.pow(height / 100, 2);
+      const bmiCategory = bmi <= 24.9 ? 1 : bmi <= 29.9 ? 2 : 3;
+
+      const inputData = [
+        [
+          gender,
+          age,
+          occupation,
+          sleepDuration,
+          sleepQuality,
+          activityLevel,
+          stressLevel,
+          bmiCategory,
+          heartRate,
+          dailySteps,
+          systolic,
+          diastolic,
+        ],
+      ];
+
+      const predictionResult = await predict(inputData);
+      const { predictedClass, confidencePercentages } = predictionResult;
+
+      let predictionResultId;
+      let predictionResultText;
+
+      if (predictedClass === 1) {
+        predictionResultText = 'No Sleep Disorder';
+        if (sleepDuration < 8 && stressLevel >= 8) {
+          predictionResultId = 6;
+        } else if (sleepDuration < 8) {
+          predictionResultId = 4;
+        } else if (stressLevel >= 8) {
+          predictionResultId = 5;
+        } else {
+          predictionResultId = 1;
+        }
+      } else if (predictedClass === 2) {
+        predictionResultText = 'Sleep Apnea';
+        predictionResultId = 2;
+      } else if (predictedClass === 3) {
+        predictionResultText = 'Sleep Insomnia';
+        predictionResultId = 3;
       }
 
-      await userDocRef.update({
-        gender: gender || userDoc.data().gender,
-        age: age || userDoc.data().age,
-      });
-
-      const predictionResultText = mapPredictionResult(predictionResultId);
+      const formattedConfidence = {
+        'No Sleep Disorder': `${confidencePercentages[0]}%`,
+        'Sleep Apnea': `${confidencePercentages[1]}%`,
+        'Sleep Insomnia': `${confidencePercentages[2]}%`,
+      };
 
       const createdAt = DateTime.now()
         .setZone('Asia/Jakarta')
         .toFormat('d MMMM yyyy');
 
-      const predictionsRef = userDocRef.collection('predictions');
-      const snapshot = await predictionsRef.get();
-      const predictionNumber = snapshot.size + 1;
-
       const predictionData = {
         gender,
         age,
-        hoursOfSleep,
+        sleepDuration,
         sleepQuality,
         occupation,
         activityLevel,
@@ -486,27 +529,31 @@ router.post(
         dailySteps,
         systolic,
         diastolic,
-        predictionResultId,
-        predictionResultText,
-        predictionNumber,
+        bmiCategory,
+        prediction: {
+          id: predictionResultId,
+          result: predictionResultText,
+          confidencePercentage: formattedConfidence,
+        },
         createdAt,
       };
 
-      const newPredictionRef = await predictionsRef.add(predictionData);
-      await newPredictionRef.update({ id: newPredictionRef.id });
+      const snapshot = await predictionsRef.get();
+      const predictionNumber = snapshot.size + 1;
+      predictionData.predictionNumber = predictionNumber;
 
-      predictionData.id = newPredictionRef.id;
+      await predictionsRef.add(predictionData);
 
       res.status(201).json({
         status: 'success',
-        message: 'Prediction history saved successfully.',
+        message: 'Prediction generated and saved successfully.',
         data: predictionData,
       });
     } catch (error) {
-      console.error('Error saving prediction history:', error);
+      console.error('Error generating prediction:', error);
       res.status(500).json({
         status: 'error',
-        message: 'Failed to save prediction history.',
+        message: 'Failed to generate and save prediction.',
       });
     }
   }
@@ -528,7 +575,7 @@ router.get('/predictions', isAuthenticated, async (req, res) => {
 
     const predictionsSnapshot = await userDocRef
       .collection('predictions')
-      .orderBy('predictionNumber', 'asc')
+      .orderBy('predictionNumber', 'desc')
       .get();
 
     if (predictionsSnapshot.empty) {
@@ -538,12 +585,16 @@ router.get('/predictions', isAuthenticated, async (req, res) => {
       });
     }
 
-    const predictions = predictionsSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      predictionResultId: doc.data().predictionResultId,
-      predictionResultText: doc.data().predictionResultText,
-      createdAt: doc.data().createdAt,
-    }));
+    const predictions = predictionsSnapshot.docs.map((doc) => {
+      const predictionData = doc.data();
+      const prediction = predictionData.prediction || {};
+
+      return {
+        predictionResultId: prediction.id,
+        predictionResultText: prediction.result,
+        createdAt: predictionData.createdAt,
+      };
+    });
 
     res.status(200).json({
       status: 'success',
@@ -592,7 +643,8 @@ router.get('/predictions/latest', isAuthenticated, async (req, res) => {
     const predictionData = {
       gender: latestPrediction.gender,
       age: latestPrediction.age,
-      hoursOfSleep: latestPrediction.hoursOfSleep,
+      sleepDuration: latestPrediction.sleepDuration,
+      sleepQuality: latestPrediction.sleepQuality,
       occupation: latestPrediction.occupation,
       activityLevel: latestPrediction.activityLevel,
       stressLevel: latestPrediction.stressLevel,
@@ -618,11 +670,11 @@ router.get('/predictions/latest', isAuthenticated, async (req, res) => {
   }
 });
 
-// FILTER PREDICTIONS BY predictionResultId QUERY PARAM
+// FILTER PREDICTIONS BY predictionResult QUERY PARAM
 router.get('/predictions/filter', isAuthenticated, async (req, res) => {
   try {
     const uid = req.user.uid;
-    const { predictionResultId } = req.query;
+    const { predictionResult } = req.query;
 
     const userDocRef = db.collection('users').doc(uid);
 
@@ -634,15 +686,13 @@ router.get('/predictions/filter', isAuthenticated, async (req, res) => {
       });
     }
 
-    let predictionsQuery = userDocRef
-      .collection('predictions')
-      .orderBy('predictionNumber', 'asc');
+    let predictionsQuery = userDocRef.collection('predictions');
 
-    if (predictionResultId) {
+    if (predictionResult) {
       predictionsQuery = predictionsQuery.where(
-        'predictionResultId',
+        'prediction.result',
         '==',
-        parseInt(predictionResultId, 10)
+        predictionResult
       );
     }
 
@@ -656,9 +706,8 @@ router.get('/predictions/filter', isAuthenticated, async (req, res) => {
     }
 
     const predictions = predictionsSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      predictionResultId: doc.data().predictionResultId,
-      predictionResultText: doc.data().predictionResultText,
+      predictionResultId: doc.data().prediction.id,
+      predictionResultText: doc.data().prediction.result,
       createdAt: doc.data().createdAt,
     }));
 
@@ -672,53 +721,6 @@ router.get('/predictions/filter', isAuthenticated, async (req, res) => {
     res.status(500).json({
       status: 'error',
       message: 'Failed to retrieve filtered predictions.',
-    });
-  }
-});
-
-// GET PREDICTIONS BY ID
-router.get('/predictions/:id', isAuthenticated, async (req, res) => {
-  try {
-    const uid = req.user.uid;
-    const predictionId = req.params.id;
-
-    const userDocRef = db.collection('users').doc(uid);
-
-    const userDoc = await userDocRef.get();
-    if (!userDoc.exists) {
-      return res.status(404).json({
-        status: 'error',
-        message: 'User not found.',
-      });
-    }
-
-    const predictionDocRef = userDocRef
-      .collection('predictions')
-      .doc(predictionId);
-    const predictionDoc = await predictionDocRef.get();
-
-    if (!predictionDoc.exists) {
-      return res.status(404).json({
-        status: 'error',
-        message: 'Prediction not found.',
-      });
-    }
-
-    const predictionData = predictionDoc.data();
-
-    res.status(200).json({
-      status: 'success',
-      message: 'Prediction details retrieved successfully.',
-      data: {
-        id: predictionDoc.id,
-        ...predictionData,
-      },
-    });
-  } catch (error) {
-    console.error('Error retrieving prediction details:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Failed to retrieve prediction details.',
     });
   }
 });
@@ -1090,9 +1092,8 @@ router.get('/statistics', isAuthenticated, async (req, res) => {
 
     const lastPredictionCard = lastPrediction
       ? {
-          id: lastPrediction.id,
-          predictionResultText: lastPrediction.predictionResultText,
-          predictionResultId: lastPrediction.predictionResultId,
+          predictionResultText: lastPrediction.prediction.result,
+          predictionResultId: lastPrediction.prediction.id,
           createdAt: lastPrediction.createdAt,
         }
       : null;
