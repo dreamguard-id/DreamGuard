@@ -5,8 +5,8 @@
 DreamGuard is a mobile sleep health application designed to help people effectively manage sleep disorder such as insomnia and sleep apnea. The app also aims to make sleep health management simple, accessible, and truly impactful for everyone.
 
 # Team 🤝 :
-|          Nama         | Bangkit-ID |       Path       |
-|:---------------------:|:----------:|:----------------:|
+|          Nama         | Bangkit-ID |       Path       |       GitHub Profile       |
+|:---------------------:|:----------:|:----------------:|:--------------------------:|
 |  Annisa Hasna Salsabila  |  M002B4KX0579  | Machine Learning |
 |  Jihan Camilla Az Zahra  |  M002B4KX2068  | Machine Learning |
 |  Vanya Maurletta  |  M002B4KX4403  | Machine Learning |
