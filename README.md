@@ -4,7 +4,7 @@
 
 ## 🌐 Cloud Architecture
 
-![Cloud Architecture (Fix)](https://github.com/user-attachments/assets/5bad05bd-b7a6-4250-9f78-bf4d02cbf4bf)
+![Cloud Architecture](https://github.com/user-attachments/assets/c4d2a21a-ed26-4bf7-915b-2679c2ea00f1)
 
 ## 📄 API Documentation
 You can visit the full API docs here: [DreamGuard API Documentation](https://docs.google.com/document/d/133s3o1W67cHlY-0vP9QovpDPRiqHsLPHBT4rdFoN5A0/edit?usp=sharing)
@@ -18,6 +18,7 @@ You can visit the full API docs here: [DreamGuard API Documentation](https://doc
   - Express Validator
   - Google Cloud Storage
   - Firebase Admin
+  - Tensorflow/tfjs-node
   - Luxon
   - Multer
   - Dotenv
@@ -195,9 +196,9 @@ npm install
 
 #### 6.3 Environment Configuration
 Create a `.env` file with the following:
-```
-GCLOUD_STORAGE_BUCKET=[YOUR-BUCKET-NAME]
-```
+- `CLOUD_STORAGE_BUCKET`: (your bucket name)
+- `MODEL_URL`: (your tfjs model url)
+- `VERSION`: (your api version)
 
 ### 7. Docker and Cloud Build
 
