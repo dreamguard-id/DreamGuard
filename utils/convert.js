@@ -44,15 +44,3 @@ exports.calculateDurationDifference = (plannedDuration, actualDuration) => {
 
   return `${sign}${absHours}h ${absMinutes}m`;
 };
-
-exports.mapPredictionResult = (predictionResultId) => {
-  const resultMapping = {
-    0: 'No Sleep Disorder',
-    1: 'Sleep Apnea',
-    2: 'Sleep Insomnia',
-    3: 'No Sleep Disorder', // ID 3 buat kondisi No Sleep Disorder + Tidur < 8 Jam
-    4: 'No Sleep Disorder', // ID 4 buat kondisi No Sleep Disorder + Stress Level 8-10
-    5: 'No Sleep Disorder', // ID 5 buat kondisi No Sleep Disorder + Tidur < 8 Jam + Stress Level 8-10
-  };
-  return resultMapping[predictionResultId] || 'Unknown Result';
-};
