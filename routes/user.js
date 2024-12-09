@@ -398,6 +398,7 @@ router.post(
     body('gender').notEmpty().withMessage('Gender is required'),
     body('age').notEmpty().withMessage('Age is required'),
     body('hoursOfSleep').notEmpty().withMessage('Hours of sleep is required'),
+    body('sleepQuality').notEmpty().withMessage('Sleep quality is required'),
     body('occupation').notEmpty().withMessage('Occupation is required'),
     body('activityLevel').notEmpty().withMessage('Activity level is required'),
     body('stressLevel').notEmpty().withMessage('Stress level is required'),
@@ -431,6 +432,7 @@ router.post(
       gender,
       age,
       hoursOfSleep,
+      sleepQuality,
       occupation,
       activityLevel,
       stressLevel,
@@ -474,6 +476,7 @@ router.post(
         gender,
         age,
         hoursOfSleep,
+        sleepQuality,
         occupation,
         activityLevel,
         stressLevel,
@@ -1185,9 +1188,10 @@ router.get('/statistics', isAuthenticated, async (req, res) => {
       'Hyperactive – Constantly on the move with very high energy expenditure.',
     ];
 
+    const activityLevelIndex = Math.floor((avgActivityLevel - 1) / 10);
     const avgActivityLevelCard = {
       avgActivityLevel,
-      expression: activityExpressions[avgActivityLevel - 1] || 'N/A',
+      expression: activityExpressions[activityLevelIndex] || 'N/A',
     };
 
     // 5. Average sleep quality card
