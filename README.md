@@ -23,7 +23,3 @@ DreamGuard is a mobile sleep health application designed to help people effectiv
 | Machine Learning | [ML Branch](https://github.com/vanyamaurletta/DreamGuard/tree/machine-learning) |
 | Cloud Computing | [Cloud Branch](https://github.com/vanyamaurletta/DreamGuard/tree/cloud-computing) |
 | Mobile Development | [Mobile Branch](https://github.com/vanyamaurletta/DreamGuard/tree/mobile-development) |
-
----
-
-Detailed Documentation: TBA (To Be Added)
