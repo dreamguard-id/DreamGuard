@@ -63,10 +63,3 @@ You can download the application [here](https://drive.google.com/drive/folders/1
 
 ### 📃 License  
 This project is licensed under the [Apache License 2.0](LICENSE)
-
-<style>
-table {
-    width: 100%;
-    table-layout: fixed;
-}
-</style>
