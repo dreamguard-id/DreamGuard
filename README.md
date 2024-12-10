@@ -3,6 +3,8 @@
 *📘 Bangkit Academy 2024 Batch 2 Capstone Project*  
 *🏷️ Bangkit Capstone Team ID: C242-PS002*  
 
+![Desktop - 1](https://github.com/jihancamilla24/CapstoneStuff/blob/main/cover.png?raw=true)
+
 ## 🔗 Project Repositories
 
 | Learning Path | Link |
@@ -10,8 +12,6 @@
 | Machine Learning | [Machine Learning](https://github.com/dreamguard-id/DreamGuard/tree/machine-learning) |
 | Cloud Computing | [Cloud Computing](https://github.com/dreamguard-id/DreamGuard/tree/cloud-computing) |
 | Mobile Development | [Mobile Development](https://github.com/dreamguard-id/DreamGuard/tree/mobile-development) |
-
-![Desktop - 1](https://github.com/jihancamilla24/CapstoneStuff/blob/main/cover.png?raw=true)
 
 ## 👥 Our Team Members
 
