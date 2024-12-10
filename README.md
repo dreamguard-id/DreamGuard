@@ -1,6 +1,6 @@
 # DreamGuard - Your Sleep Health Companion for Sleep Disorder Detection and Quality Improvement ✨
-*📘 Bangkit Academy 2024 Batch 2 Capstone Project*  
-*🏷️ Bangkit Capstone Team ID: C242-PS002*  
+**🏷️ Bangkit Academy 2024 Batch 2 Capstone Project**  
+**📘 Bangkit Capstone Team ID: C242-PS002**  
 
 ![Desktop - 1](https://github.com/jihancamilla24/CapstoneStuff/blob/main/cover.png?raw=true)
 
