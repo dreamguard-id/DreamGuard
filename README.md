@@ -11,7 +11,6 @@
 | Machine Learning | [Machine Learning](https://github.com/dreamguard-id/DreamGuard/tree/machine-learning) |
 | Cloud Computing | [Cloud Computing](https://github.com/dreamguard-id/DreamGuard/tree/cloud-computing) |
 | Mobile Development | [Mobile Development](https://github.com/dreamguard-id/DreamGuard/tree/mobile-development) |
-|  |  |
 
 ## 👥 Our Team Members
 
@@ -64,3 +63,10 @@ You can download the application [here](https://drive.google.com/drive/folders/1
 
 ### 📃 License  
 This project is licensed under the [Apache License 2.0](LICENSE)
+
+<style>
+table {
+    width: 100%;
+    table-layout: fixed;
+}
+</style>
