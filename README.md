@@ -1,8 +1,9 @@
-# DreamGuard - Your Sleep Health Companion for Sleep Disorder Detection and Quality Improvement ✨
+# DreamGuard  
+**Your Sleep Health Companion for Sleep Disorder Detection and Quality Improvement ✨**  
+*📘 Bangkit Academy 2024 Batch 2 Capstone Project*  
+*🏷️ Bangkit Capstone Team ID: C242-PS002*  
 
-## 🏷️ Bangkit Capstone Team ID: C242-PS002
-
-### 🔗 Project Repositories
+## 🔗 Project Repositories
 
 | Learning Path | Link |
 |--------------|-------------|
@@ -12,7 +13,7 @@
 
 ![Desktop - 1](https://github.com/jihancamilla24/CapstoneStuff/blob/main/cover.png?raw=true)
 
-### 👥 Our Team Members
+## 👥 Our Team Members
 
 | Name | ID | University | Learning Path | Profiles |
 |------|----|-----------|--------------| ---------|
@@ -47,24 +48,19 @@ DreamGuard is an innovative mobile application designed to help people in Indone
 
 Our goal is to make sleep health management simple, accessible, and truly impactful for everyone, empowering users to take control of their sleep health and ultimately improve their quality of life.
 
-## 🔧 API Documentation
+## 📄 Project Information  
 
-Here is the link to the docuentation: [API Documentation](https://docs.google.com/document/d/133s3o1W67cHlY-0vP9QovpDPRiqHsLPHBT4rdFoN5A0/edit?usp=sharing)
+### 🔧 API Documentation  
+Here is the link to the API docs: [API Documentation](https://docs.google.com/document/d/133s3o1W67cHlY-0vP9QovpDPRiqHsLPHBT4rdFoN5A0/edit?usp=sharing)  
 
-## 🧠 Machine Learning
+### 🧠 Machine Learning  
+- **📂 Notebooks:**  
+  Access the notebooks [here](https://drive.google.com/file/d/1T9CA9Vg1bnlBhpGaWT0zQFKYNxb53VDk/view?usp=sharing)  
+- **📊 Datasets:**  
+  Explore the datasets on Kaggle [here](https://www.kaggle.com/datasets/uom190346a/sleep-health-and-lifestyle-dataset/data)  
 
-### 📂 Notebooks
+### 📥 Download  
+You can download the application [here](https://drive.google.com/drive/folders/1vNlNQZiQemJqWG4quoq1qk65Nvyc3od5?usp=sharing)
 
-Here is the link to the notebooks: [Colab Notebooks](https://drive.google.com/file/d/1T9CA9Vg1bnlBhpGaWT0zQFKYNxb53VDk/view?usp=sharing)
-
-### 📊 Datasets
-
-Here is the link to the datasets: [Kaggle Datasets](https://www.kaggle.com/datasets/uom190346a/sleep-health-and-lifestyle-dataset/data)
-
-## 📥 Download
-
-You can download the application here: [DreamGuard APK](https://drive.google.com/drive/folders/1vNlNQZiQemJqWG4quoq1qk65Nvyc3od5?usp=sharing)
-
-## 📃 License  
-
-This project is licensed under the [Apache License 2.0](LICENSE).  
+### 📃 License  
+This project is licensed under the [Apache License 2.0](LICENSE)
