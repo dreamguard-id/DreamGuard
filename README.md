@@ -7,10 +7,11 @@
 ## 🔗 Project Repositories
 
 | Learning Path | Link |
-|--------------|-------------|
+| -------------- | ----------- |
 | Machine Learning | [Machine Learning](https://github.com/dreamguard-id/DreamGuard/tree/machine-learning) |
 | Cloud Computing | [Cloud Computing](https://github.com/dreamguard-id/DreamGuard/tree/cloud-computing) |
 | Mobile Development | [Mobile Development](https://github.com/dreamguard-id/DreamGuard/tree/mobile-development) |
+|  |  |
 
 ## 👥 Our Team Members
 
