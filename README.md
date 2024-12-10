@@ -2,7 +2,7 @@
 **🏷️ Bangkit Academy 2024 Batch 2 Capstone Project**  
 **📘 Bangkit Capstone Team ID: C242-PS002**  
 
-![Desktop - 1](https://github.com/jihancamilla24/CapstoneStuff/blob/main/cover.png?raw=true)
+![cover 1](https://github.com/user-attachments/assets/6f90708c-d5d1-41fe-b687-b10afef9de49)
 
 ## 🔗 Project Repositories
 
