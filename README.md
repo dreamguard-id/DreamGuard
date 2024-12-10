@@ -46,3 +46,25 @@ DreamGuard is an innovative mobile application designed to help people in Indone
 - **Real-time Insights & Statistics**: Continuous monitoring and guidance
 
 Our goal is to make sleep health management simple, accessible, and truly impactful for everyone, empowering users to take control of their sleep health and ultimately improve their quality of life.
+
+## 🔧 API Documentation
+
+Here is the link to the API docs: [https://docs.google.com/document/d/133s3o1W67cHlY-0vP9QovpDPRiqHsLPHBT4rdFoN5A0/edit?usp=sharing]
+
+## 🧠 Machine Learning
+
+### 📂 Notebooks
+
+Here is the link to the notebooks: [https://drive.google.com/file/d/1T9CA9Vg1bnlBhpGaWT0zQFKYNxb53VDk/view?usp=sharing]
+
+### 📊 Datasets
+
+Here is the link to the datasets: [https://www.kaggle.com/datasets/uom190346a/sleep-health-and-lifestyle-dataset/data]
+
+## 📥 Download
+
+You can download the application here: [https://drive.google.com/drive/folders/1vNlNQZiQemJqWG4quoq1qk65Nvyc3od5?usp=sharing]
+
+## 📃 License  
+
+This project is licensed under the [Apache License 2.0](LICENSE).  
