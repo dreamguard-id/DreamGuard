@@ -10,7 +10,7 @@
   
 ### Featured Technologies
 * [TensorFlow](https://www.tensorflow.org/)
-* [TensorFlow Lite](https://www.tensorflow.org/lite)
+* [TensorFlow Js](https://www.tensorflow.org/js)
 
 ### Dataset
 Public Dataset
