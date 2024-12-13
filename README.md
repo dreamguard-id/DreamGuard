@@ -3,10 +3,10 @@
 ## Bangkit Capstone Team ID: C242-PS002
 
 ### Steps To Generate Model
-1. Go to kaggle and upload it to google colab
-2. After connecting to kaggle download the zip dataset from kaggle using collab
-3. Use Tensorflow 2.9 and restart runtime before running the rest of the cell
-4. Run the rest of the cell and dont forget to save the model
+1. Go to Kaggle and upload it to Google Collab.
+2. After connecting to Kaggel, download the zip dataset from Kaggel using Google Collab.
+3. Use Tensorflow 2.9 and restart runtime before running the rest of the cell.
+4. Run the rest of the cell and dont forget to save the model.
   
 ### Featured Technologies
 * [TensorFlow](https://www.tensorflow.org/)
