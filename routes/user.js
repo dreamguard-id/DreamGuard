@@ -95,7 +95,6 @@ router.post(
             : userData.profilePicture,
       };
 
-      // Berikan respons sukses
       res.status(201).json({
         status: 'success',
         message: 'User registered successfully to the database.',
@@ -1201,13 +1200,13 @@ router.get('/statistics', isAuthenticated, async (req, res) => {
         schedule.sleepQuality !== null && schedule.sleepQuality !== undefined
     );
 
-    const totalSleepQuality = validSleepQualitySchedules.reduce(
-      (acc, schedule) => acc + schedule.sleepQuality,
-      0
-    );
-
     const avgSleepQuality = validSleepQualitySchedules.length
-      ? Math.round(totalSleepQuality / validSleepQualitySchedules.length)
+      ? Math.round(
+          validSleepQualitySchedules.reduce(
+            (acc, schedule) => acc + parseInt(schedule.sleepQuality, 10),
+            0
+          ) / validSleepQualitySchedules.length
+        )
       : 0;
 
     const sleepQualityExpressions = [
